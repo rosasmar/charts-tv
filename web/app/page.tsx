@@ -2,6 +2,7 @@ import { BurnInShift } from "@/app/components/burn-in-shift";
 import { Clock } from "@/app/components/clock";
 import { Dashboard } from "@/app/components/dashboard";
 import { NewsTicker } from "@/app/components/news-ticker";
+import { NightDim } from "@/app/components/night-dim";
 import { MOCK_WATCHLIST } from "@/app/lib/watchlist";
 
 export default function Home() {
@@ -20,6 +21,8 @@ export default function Home() {
       <Dashboard items={MOCK_WATCHLIST} />
 
       <NewsTicker />
+
+      <NightDim />
     </BurnInShift>
   );
 }
