@@ -10,6 +10,7 @@ import {
   SslErrorData,
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  WebViewMessageEvent,
   WebViewNavigationEvent,
 } from '@amazon-devices/webview/dist/types/WebViewTypes';
 
@@ -17,6 +18,51 @@ import {
 // team's Vercel project (this is an unclaimed temporary deployment of main).
 // For D-pad debugging, use 'file:///pkg/assets/keytest.html' instead.
 const APP_URL = 'https://web-nine-gray-63.vercel.app';
+
+// The page's own console output doesn't reach the device log, so forward it
+// (and uncaught errors) to this wrapper, which logs it with a [web] prefix.
+// Read it with `vega device start-log-stream`.
+const FORWARD_CONSOLE = `(function () {
+  var bridge = window.ReactNativeWebView;
+  if (!bridge) return;
+  function send(level, args) {
+    try {
+      bridge.postMessage(JSON.stringify({
+        type: 'console',
+        level: level,
+        text: Array.prototype.map.call(args, function (a) {
+          try { return typeof a === 'string' ? a : JSON.stringify(a); }
+          catch (e) { return String(a); }
+        }).join(' '),
+      }));
+    } catch (e) {}
+  }
+  ['log', 'info', 'warn', 'error'].forEach(function (level) {
+    var original = console[level];
+    console[level] = function () {
+      send(level, arguments);
+      return original.apply(console, arguments);
+    };
+  });
+  window.addEventListener('error', function (e) {
+    send('error', ['Uncaught ' + e.message + ' at ' + e.filename + ':' + e.lineno]);
+  });
+})();
+true;`;
+
+function logWebMessage({nativeEvent: {data}}: WebViewMessageEvent) {
+  try {
+    const message = JSON.parse(data);
+    if (message.type === 'console') {
+      const log = message.level === 'error' ? console.error : console.info;
+      log(`[web] ${message.level}: ${message.text}`);
+      return;
+    }
+  } catch {
+    // Not one of ours; fall through and log it raw.
+  }
+  console.info(`[web] message: ${data}`);
+}
 
 export const App = () => {
   const webRef = useRef(null);
@@ -35,6 +81,8 @@ export const App = () => {
         domStorageEnabled
         hasTVPreferredFocus
         javaScriptEnabled
+        injectedJavaScriptBeforeContentLoaded={FORWARD_CONSOLE}
+        onMessage={logWebMessage}
         mediaPlaybackRequiresUserAction={false}
         mixedContentMode="compatibility"
         // thirdPartyCookiesEnabled
