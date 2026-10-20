@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AlertBanner } from "@/app/components/alert-banner";
 import { Watchlist } from "@/app/components/watchlist";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
+import { useDemoPrices } from "@/app/lib/use-demo-prices";
+import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 
 /** How long each symbol stays in the chart panel while auto-rotating. */
@@ -23,7 +26,13 @@ type Badge = { icon: BadgeIcon; text: string; id: number };
 // alive on an always-on TV; touching the remote pauses it. Media buttons and
 // Alexa voice commands control it: Play/Pause stops or starts rotation, and
 // fast-forward / rewind skip to the next or previous symbol.
-export function Dashboard({ items }: { items: WatchlistItem[] }) {
+export function Dashboard({
+  items: sourceItems,
+}: {
+  items: WatchlistItem[];
+}) {
+  const items = useDemoPrices(sourceItems);
+  const alert = usePriceAlerts(items);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);
@@ -115,6 +124,7 @@ export function Dashboard({ items }: { items: WatchlistItem[] }) {
 
   return (
     <main className="grid min-h-0 grid-cols-[1fr_34rem] gap-[2rem]">
+      <AlertBanner alert={alert} />
       {/* TODO: Replace with the live candlestick chart for the selected
           symbol once the chart component lands. */}
       <section
