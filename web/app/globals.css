@@ -68,3 +68,19 @@ body {
 .alert-enter {
   animation: alert-enter 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+
+/* News ticker: the track holds two copies of the headlines and slides by
+   one copy, so the loop is seamless. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  animation: ticker-scroll linear infinite;
+  will-change: transform;
+}

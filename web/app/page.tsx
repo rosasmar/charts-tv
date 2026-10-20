@@ -1,5 +1,6 @@
 import { Clock } from "@/app/components/clock";
 import { Dashboard } from "@/app/components/dashboard";
+import { NewsTicker } from "@/app/components/news-ticker";
 import { MOCK_WATCHLIST } from "@/app/lib/watchlist";
 
 export default function Home() {
@@ -17,13 +18,7 @@ export default function Home() {
 
       <Dashboard items={MOCK_WATCHLIST} />
 
-      {/* TODO: Replace with the scrolling news ticker. */}
-      <footer
-        aria-label="News"
-        className="flex h-[4.5rem] items-center rounded-[1.25rem] border border-panel-border bg-panel px-[2rem] text-[1.5rem] text-muted"
-      >
-        News ticker
-      </footer>
+      <NewsTicker />
     </div>
   );
 }
