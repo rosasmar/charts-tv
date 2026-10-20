@@ -2,10 +2,24 @@
 
 import { useEffect, useRef } from "react";
 
-export type DpadKey = "up" | "down" | "left" | "right" | "select" | "back";
+export type DpadKey =
+  | "up"
+  | "down"
+  | "left"
+  | "right"
+  | "select"
+  | "back"
+  | "playPause"
+  | "play"
+  | "pause"
+  | "next"
+  | "previous";
 
 // Fire TV remotes arrive in the Vega WebView as arrow keys (37–40) and Enter
-// (13). Older WebViews may only set keyCode, so fall back to it.
+// (13); the media buttons as MediaPlayPause (179), MediaFastForward (228) and
+// MediaRewind (227). Next/Previous track never arrive from the remote, but are
+// mapped in case other remotes or keyboards send them. Older WebViews may
+// only set keyCode, so fall back to it.
 const BY_KEY: Record<string, DpadKey> = {
   ArrowUp: "up",
   ArrowDown: "down",
@@ -16,6 +30,13 @@ const BY_KEY: Record<string, DpadKey> = {
   Escape: "back",
   GoBack: "back",
   BrowserBack: "back",
+  MediaPlayPause: "playPause",
+  MediaPlay: "play",
+  MediaPause: "pause",
+  MediaFastForward: "next",
+  MediaTrackNext: "next",
+  MediaRewind: "previous",
+  MediaTrackPrevious: "previous",
 };
 const BY_KEY_CODE: Record<number, DpadKey> = {
   38: "up",
@@ -24,6 +45,11 @@ const BY_KEY_CODE: Record<number, DpadKey> = {
   39: "right",
   13: "select",
   27: "back",
+  179: "playPause",
+  228: "next",
+  176: "next",
+  227: "previous",
+  177: "previous",
 };
 
 export function toDpadKey(event: KeyboardEvent): DpadKey | null {
