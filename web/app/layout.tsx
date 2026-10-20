@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "charts tv",
-  description: "charts tv",
+  title: "TickerTV",
+  description: "An always-on crypto trading screen for your TV.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
