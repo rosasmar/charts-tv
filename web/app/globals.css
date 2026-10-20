@@ -35,3 +35,20 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Countdown bar for the chart panel's auto-rotation. */
+@keyframes rotate-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.rotate-progress {
+  transform-origin: left;
+  animation-name: rotate-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
