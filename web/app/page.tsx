@@ -11,7 +11,7 @@ export default function Home() {
           <div className="text-[2.5rem] font-semibold tracking-tight">
             TickerTV
           </div>
-          <div className="mt-2 text-[1.25rem] text-muted">Crypto · 24/7</div>
+          <div className="mt-2 text-[1.25rem] text-muted">Crypto &amp; stocks</div>
         </div>
       </header>
 

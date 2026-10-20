@@ -9,13 +9,15 @@ export type WatchlistItem = {
 // TODO: Replace with live data from the market data feed (CoinGecko /
 // DexScreener) once it lands. Keep the WatchlistItem shape or update the
 // layout components that consume it.
+// TODO: AMZN needs a stock price source; CoinGecko and DexScreener are
+// crypto-only. Stocks also only move during market hours.
 export const MOCK_WATCHLIST: WatchlistItem[] = [
+  { symbol: "AMZN", name: "Amazon", price: 228.5, change24h: 1.84 },
   { symbol: "BTC", name: "Bitcoin", price: 108_420.15, change24h: 2.41 },
   { symbol: "ETH", name: "Ethereum", price: 3_912.4, change24h: -1.18 },
   { symbol: "SOL", name: "Solana", price: 187.32, change24h: 5.67 },
   { symbol: "XRP", name: "XRP", price: 2.41, change24h: 0.32 },
   { symbol: "DOGE", name: "Dogecoin", price: 0.2134, change24h: -3.05 },
-  { symbol: "LINK", name: "Chainlink", price: 18.74, change24h: 1.12 },
 ];
 
 export function formatPrice(price: number): string {
