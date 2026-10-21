@@ -1,43 +1,210 @@
 # Friction log
 
-This file records the snags we hit while building TickerTV with the Amazon Vega SDK, for the hackathon's friction-log bonus. Add new entries as they happen, with the date, what happened, the impact, and a suggested fix.
+These are the snags we hit while building TickerTV with the Amazon Vega SDK, the Vega Virtual Device (VVD) and Amazon Bedrock. Each entry follows the hackathon's format: task, steps, expected vs actual, severity, workaround and suggestion. [`feedback.md`](feedback.md) refers to entries by number.
 
-Environment: MacBook Pro M1, macOS Sonoma 14.6.1, Node 24, Homebrew 7.0.9, Vega SDK 0.24.12112, Vega CLI 1.4.5.
+**Environment:** MacBook Pro M1, macOS Sonoma 14.6.1, Node 24, Homebrew 7.0.9, Vega SDK 0.24.12112, Vega CLI 1.4.5, AWS CLI 2.38, Oct 19–21, 2026.
+
+**Severity scale:**
+- **Critical:** blocked a core feature, with no workaround.
+- **High:** cost hours, or needed a custom workaround.
+- **Medium:** cost time, with an easy workaround.
+- **Low:** annoyance.
+
+## Summary
+
+| # | Area | Issue | Severity |
+|---|------|-------|----------|
+| 1 | SDK install | Disk space needed isn't documented | Medium |
+| 2 | SDK install | macOS 14 prerequisites build from source | Low |
+| 3 | SDK install | Installer served from a non-Amazon domain | Low |
+| 4 | SDK install | `NONINTERACTIVE` install mode undocumented | Low |
+| 5 | Tooling | `vega project generate` ignores `--name` for the output folder | Low |
+| 6 | Tooling | Web page console output never reaches the device log | High |
+| 7 | Tooling | VVD key injection and screenshots are hard to discover | Medium |
+| 8 | Remote | `KEY_NEXTSONG` rejected as an unknown key | Medium |
+| 9 | Remote | Media buttons arrive as `keydown`, not Media Session; Next/Previous never arrive | High |
+| 10 | Voice | No way to simulate an Alexa voice command on the VVD | Medium |
+| 11 | Tooling | First seconds of app logs missing from the log stream | Low |
+| 12 | Always-on | No way to keep a non-video app awake (screensaver after 5 min) | **Critical** |
+| 13 | Always-on | VVD has no screensaver app, so idle behavior is invisible | Medium |
+| 14 | Bedrock | Free plan: one region, no bedrock-mantle endpoint | High |
+| 15 | Bedrock | Paid new account: all Claude models denied, use-case form "not authorized" | **Critical** |
+| 16 | Bedrock | All daily token quotas are 0, so even Nova is throttled | High |
+| 17 | Bedrock | Opus 5.5 listed ACTIVE but returns 404; neighboring models return 403 | Medium |
+| 18 | AWS CLI | Positive: `aws login` + SDK credential pickup | n/a |
+
+---
 
 ## Vega SDK install
 
-| # | When | What happened | Impact | Suggestion |
-|---|------|---------------|--------|------------|
-| 1 | Oct 19 | The install docs don't say how much disk space the SDK and Vega Virtual Device (VVD) need. We planned for about 20 GB. The actual install (CLI, SDK 0.24.12112 and VVD) came to 5.4 GB. | We only found out at install time that the machine had too little free space, and spent time freeing far more than we needed. | List the free disk space needed in the prerequisites, and have `get_vvm.sh` check it before downloading. |
-| 2 | Oct 20 | The prerequisite step `brew install … watchman` compiled `cmake`, `folly` and other dependencies from source on macOS 14, because no prebuilt packages were available. | Setup took much longer than the "10–15 minutes" in the docs. | Name the supported macOS versions, or ship prebuilt dependencies. |
-| 3 | Oct 20 | The install script is served from `sdk-installer.vega.labcollab.net`, not an `amazon.com` domain. | We stopped to check that the domain was legitimate before piping it to bash. | Host the installer on an amazon.com domain, or publish a checksum. |
-| 4 | Oct 20 | The current install page doesn't document `NONINTERACTIVE=true`. We found it by reading the script; the 0.21 CI docs also mention it. | Running the installer from an automated or agent-driven terminal took extra effort. | Document it on the main install page. |
+### 1. Disk space needed isn't documented (Medium)
+- **Task:** Install the Vega SDK and the VVD.
+- **Steps:** Followed the 0.23 install page, then ran `get_vvm.sh`.
+- **Expected:** The prerequisites list the free disk space needed, and the installer checks it before downloading.
+- **Actual:** Neither the docs nor the installer mention disk space. We planned for about 20 GB; the real install (CLI, SDK 0.24.12112 and VVD) used 5.4 GB.
+- **Workaround:** Freed space by deleting files, thinning Time Machine local snapshots, and installing a pending macOS update to release its snapshots. That was far more than needed.
+- **Suggestion:** List the required free space in the prerequisites, and have `get_vvm.sh` check it first.
+
+### 2. macOS 14 prerequisites build from source (Low)
+- **Task:** Install the documented Homebrew prerequisites.
+- **Steps:** Ran `brew install binutils coreutils gawk findutils grep jq lz4 gnu-sed watchman` on macOS 14.6.
+- **Expected:** A setup of about 10–15 minutes, as the docs say.
+- **Actual:** No prebuilt packages were available, so Homebrew compiled `cmake`, `folly` and others from source, which took much longer.
+- **Workaround:** Ran the Vega installer in parallel; it only needs `curl` and `tar`.
+- **Suggestion:** Name the supported macOS versions, or ship prebuilt dependencies.
+
+### 3. Installer served from a non-Amazon domain (Low)
+- **Task:** Run the install command from the docs.
+- **Steps:** `curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash`
+- **Expected:** An `amazon.com` domain, or a published checksum.
+- **Actual:** The script comes from `labcollab.net`.
+- **Workaround:** Downloaded the script and read it before running, and confirmed the URL on the official docs page.
+- **Suggestion:** Host it on an amazon.com domain, or publish a checksum.
+
+### 4. `NONINTERACTIVE` install mode undocumented (Low)
+- **Task:** Run the installer from an automated, agent-driven terminal.
+- **Steps:** Read the current install page.
+- **Expected:** A documented non-interactive mode.
+- **Actual:** It's only mentioned in the 0.21 CI docs; we found `NONINTERACTIVE=true` by reading the script.
+- **Workaround:** `NONINTERACTIVE=true` worked, using the default paths.
+- **Suggestion:** Document it on the main install page.
 
 ## Project setup and tooling
 
-| # | When | What happened | Impact | Suggestion |
-|---|------|---------------|--------|------------|
-| 5 | Oct 20 | `vega project generate -t vegaWebview -n tickertvHello` wrote the template files straight into the current directory instead of a `tickertvHello/` folder, even though `--name` was given. | The working folder filled up with stray files, which we moved by hand. | Create a `<name>/` subfolder by default, like most scaffolders do. |
-| 6 | Oct 20 | It wasn't obvious how to read an app's console output from the VVD. `loggingctl log` printed nothing we could match. `vega device start-log-stream` works, but we only found it in `vega device --help`. Even then, `console.*` calls from the web page itself don't appear, only the React Native wrapper's. | It took several tries to confirm the WebView had loaded. Debugging the web app still means looking at the screen. | Mention `start-log-stream` in the WebView guide, add a per-app filter, and forward WebView console messages to the log. |
-| 7 | Oct 20 | Automating the VVD is hard to discover. `inputd-cli button_press` needs `KEY_RIGHT`-style names, and `dpad_right`, `right` and `DPAD_RIGHT` all fail without listing the valid ones. `screenshooter` fails with "creating a buffer file … Permission denied". One badly quoted shell command took down `com.amazon.dev.shell.service` for about 10 seconds. | Headless testing took longer than it should have. | Add `vega device press-key` and `vega device screenshot` commands, and have `inputd-cli` print the valid key names. |
-| 8 | Oct 20 | Injecting `KEY_NEXTSONG` reaches the app but logs `Volta:dispatchKeyEvent : Unknown key code string: NEXTSONG`. `KEY_PLAYPAUSE` works. | It's unclear which media keys a WebView app can rely on for Alexa "next" and "previous". | Document which remote and media keys reach a WebView, and how they map to DOM `keydown` events and Media Session actions. |
+### 5. `vega project generate` ignores `--name` for the output folder (Low)
+- **Task:** Create a WebView app from the template.
+- **Steps:** `vega project generate -t vegaWebview -n tickertvHello`
+- **Expected:** A new `tickertvHello/` folder.
+- **Actual:** The template files were written straight into the current directory.
+- **Workaround:** Moved the files into a subfolder by hand. `--outputDir` also works.
+- **Suggestion:** Create a `<name>/` subfolder by default, like most scaffolders.
+
+### 6. Web page console output never reaches the device log (High)
+- **Task:** Confirm the WebView loaded, and debug the web app on the VVD.
+- **Steps:** Tried `loggingctl log` and grepping the journal, found `vega device start-log-stream` in `vega device --help`, and logged from the page.
+- **Expected:** The page's `console.*` output appears in the device log, as the React Native wrapper's output does.
+- **Actual:** Only the wrapper's logs appear. The page's own console output is invisible, so debugging means watching the screen.
+- **Workaround:** We built a bridge (PR #9). It injects a script with `injectedJavaScriptBeforeContentLoaded` that forwards `console.*` and uncaught errors over `postMessage`, and the wrapper logs them with a `[web]` prefix.
+- **Suggestion:** Forward WebView console output to the device log by default, mention `start-log-stream` in the WebView guide, and add a per-app filter.
+
+### 7. VVD key injection and screenshots are hard to discover (Medium)
+- **Task:** Test remote input without a human at the keyboard.
+- **Steps:**
+  - `inputd-cli button_press dpad_right`, then `right`, then `DPAD_RIGHT`.
+  - `screenshooter /tmp/x.png`.
+- **Expected:** Documented key names, and a working screenshot command.
+- **Actual:**
+  - All three key names fail with "invalid button value", and the valid names aren't listed. `KEY_RIGHT` works.
+  - `screenshooter` fails with "creating a buffer file … Permission denied".
+  - One badly quoted shell command took down `com.amazon.dev.shell.service` for about 10 seconds.
+- **Workaround:** Found `KEY_*` names by trial. Verified behavior through the log bridge (#6), with a human checking the screen.
+- **Suggestion:** Add `vega device press-key` and `vega device screenshot`, and have `inputd-cli` list valid key names.
 
 ## Remote, voice and always-on behavior
 
-| # | When | What happened | Impact | Suggestion |
-|---|------|---------------|--------|------------|
-| 9 | Oct 21 | With `allowsDefaultMediaControl` set, remote media buttons still reach the page as plain `keydown` events (`MediaPlayPause`, `MediaFastForward`, `MediaRewind`), not as `navigator.mediaSession` actions. The WebView guide only describes the `mediaSession` path. `KEY_NEXTSONG` and `KEY_PREVIOUSSONG` never reach the page at all. | We had to measure the real behavior on the VVD with our own console bridge, and handle remote buttons and voice separately. | Document which remote buttons arrive as `keydown` and which as Media Session actions, and deliver Next/Previous track. |
-| 10 | Oct 21 | There's no way to inject an Alexa voice command ("Alexa, pause") on the VVD. The on-device `alexa` tool only simulates the mic button and needs real speech. | Our voice-control path can't be tested before submission without a physical Fire TV. | Add a CLI to send a media-control or voice intent to the foreground app, for example `vega device send-media-command pause`. |
-| 11 | Oct 21 | The first few seconds of an app's logs after launch are missing from `vega device start-log-stream`, even when the stream is started before launching. That includes the wrapper's "Page loading completed". | Startup problems are hard to see in the log. | Buffer and replay app logs from process start, or add a `--since-launch` option. |
-| 12 | Oct 21 | **We couldn't keep an always-on, non-video app awake.** The screensaver triggers 5 minutes after the last remote press even with our app in the foreground (`lcm-idle-handler: Handling idle event - starting screensaver`). We tried three fixes, and none stopped it: (1) the W3C Screen Wake Lock API, where `navigator.wakeLock` exists but `request('screen')` fails with `NotAllowedError`; (2) a muted looping `<video>`, which froze at 3.1 s on the VVD and never created a decode session; (3) a native Turbo Module calling `IKeplerUserEngagementModuleV2::makeVideoPlaybackUserEngagement()->start()`, which returns successfully but changes nothing, because the resource manager logs `display decoded session status … not engaged ? true`. Engagement seems to be tracked per video decode session. There's also no screensaver or keep-awake guidance in the WebView docs. | This is the core use case of an always-on dashboard (stock tickers, clocks, status boards, signage). On a real Fire TV our app would be covered by the screensaver after 5 minutes. We spent several hours testing and kept the native module on a branch (`vega-keep-awake`) for reference. | Add a documented keep-screen-on API for apps, like Android's `FLAG_KEEP_SCREEN_ON`. Ideally allow the Wake Lock API in WebView apps, or add a WebView prop such as `keepScreenOn`. Also document what the User Engagement API needs in order to take effect. |
-| 13 | Oct 21 | On the VVD, the idle handler tries to launch `os://ambient-component`, but it isn't installed (`Package for id 'ambient-component' not found`), so no screensaver ever appears. | The VVD hides the screensaver behavior, so we only found the problem by reading the logs. A developer testing only on the VVD would never notice it. | Ship a placeholder screensaver on the VVD, or log a clear warning, so idle behavior can be tested. |
+### 8. `KEY_NEXTSONG` rejected as an unknown key (Medium)
+- **Task:** Support Alexa or remote "next" and "previous" in the WebView.
+- **Steps:** Injected `KEY_NEXTSONG` with `inputd-cli`.
+- **Expected:** A next-track key event or Media Session action reaches the page.
+- **Actual:** The app logs `Volta:dispatchKeyEvent : Unknown key code string: NEXTSONG`, and nothing reaches the page. `KEY_PLAYPAUSE` works.
+- **Workaround:** Used fast-forward and rewind for next and previous coin (#9).
+- **Suggestion:** Document which remote and media keys reach a WebView, and deliver Next/Previous track.
+
+### 9. Media buttons arrive as `keydown`, not Media Session (High)
+- **Task:** Handle the remote's media buttons and Alexa transport commands.
+- **Steps:** With `allowsDefaultMediaControl` set, registered `navigator.mediaSession` handlers and a `keydown` logger on a test page, then injected `KEY_PLAYPAUSE`, `KEY_FASTFORWARD`, `KEY_REWIND`, `KEY_NEXTSONG` and `KEY_PREVIOUSSONG`.
+- **Expected:** Following the WebView guide, media commands reach the page's Media Session handlers.
+- **Actual:**
+  - The remote buttons arrive as plain `keydown` events: `MediaPlayPause` (179), `MediaFastForward` (228) and `MediaRewind` (227).
+  - No Media Session handler fired.
+  - Next and Previous never arrive at all.
+- **Workaround:** Handled both paths (PR #14): `keydown` media keys for the remote, and Media Session handlers for Alexa voice.
+- **Suggestion:** Document which buttons arrive as `keydown` and which as Media Session actions.
+
+### 10. No way to simulate an Alexa voice command on the VVD (Medium)
+- **Task:** Test "Alexa, pause" and "Alexa, fast forward" against the app.
+- **Steps:** Looked for tooling on the device and in the docs; found `alexa`.
+- **Expected:** A way to send a voice or media-control intent to the foreground app.
+- **Actual:** The `alexa` tool only simulates the mic button and needs real speech. Nothing in the docs covers injecting voice intents.
+- **Workaround:** Implemented the documented Media Session path, marked it untested, and demo with the remote buttons only.
+- **Suggestion:** Add `vega device send-media-command pause|play|seekforward|…`.
+
+### 11. First seconds of app logs missing from the log stream (Low)
+- **Task:** See the wrapper's startup logs, such as "Page loading completed".
+- **Steps:** Started `vega device start-log-stream`, then launched the app.
+- **Expected:** All app logs from process start.
+- **Actual:** Lines from the first few seconds after launch are often missing.
+- **Workaround:** Repeat important status lines about 20 s after start, and terminate and relaunch the app after starting the stream.
+- **Suggestion:** Replay app logs from process start, or add `--since-launch`.
+
+### 12. No way to keep a non-video app awake (Critical)
+- **Task:** Keep an always-on market dashboard on screen all day.
+- **Steps:** Left the app in the foreground with no input and watched the device log, then tried three fixes:
+  1. The W3C Screen Wake Lock API, `navigator.wakeLock.request('screen')`.
+  2. A muted, looping `<video>`.
+  3. A native Turbo Module calling `IKeplerUserEngagementModuleV2::makeVideoPlaybackUserEngagement()->start()`.
+- **Expected:** A supported way for an app to keep the screen on, like Android's `FLAG_KEEP_SCREEN_ON`.
+- **Actual:**
+  - `lcm-idle-handler: Handling idle event - starting screensaver` fires exactly 5 minutes after the last key press.
+  - Wake Lock rejects with `NotAllowedError`.
+  - The video froze at 3.1 s on the VVD and never created a decode session.
+  - The User Engagement `start()` returns success, but idle still fires. The resource manager logs `display decoded session status … not engaged ? true`, which suggests engagement is tracked per video decode session.
+- **Workaround:** None. It's documented as a known limitation, and the native module is kept on the `vega-keep-awake` branch.
+- **Suggestion:** Add a documented keep-screen-on capability for apps. Ideally allow Wake Lock in WebView apps, or add a WebView prop such as `keepScreenOn`, and document what User Engagement needs to take effect.
+
+### 13. VVD has no screensaver app, so idle behavior is invisible (Medium)
+- **Task:** Check whether the screensaver interrupts the app.
+- **Steps:** Left the app idle on the VVD and watched the screen and the log.
+- **Expected:** The VVD shows the screensaver, as a real Fire TV would.
+- **Actual:** The idle handler tries to launch `os://ambient-component`, which isn't installed (`Package for id 'ambient-component' not found`), so nothing visible happens.
+- **Workaround:** Found the idle event by reading the device log.
+- **Suggestion:** Ship a placeholder screensaver on the VVD, or log a clear warning.
 
 ## Amazon Bedrock on a new AWS account
 
-| # | When | What happened | Impact | Suggestion |
-|---|------|---------------|--------|------------|
-| 14 | Oct 21 | A new **free-plan** account is pinned to one region (eu-north-1 for us). Opening us-east-1 shows "Region unavailable… upgrade your plan". The newer **bedrock-mantle endpoint** (the Messages API for current Claude models) is unavailable on the free plan entirely ("Upgrade to paid plan to access this service"). | Sign-up says new accounts get $100 in credits, but Bedrock's current Claude endpoint isn't usable without upgrading. | Say on the free-plan sign-up page which Bedrock endpoints and models are included. |
-| 15 | Oct 21 | After upgrading to the paid plan, every Claude model is still denied: Haiku 4.5, Sonnet 5 and Opus 4.8 return `403 … is not available for this account`, including in the console playground. Submitting the required Anthropic use-case form fails in both the console and the CLI (`put-use-case-for-model-access`) with `ValidationException: Your account is not authorized to perform this action. Please create a support case`. The only path forward is a support ticket. | A developer with a paid account and a valid use case can't reach Claude at all during a 5-day hackathon, and has to wait on support. The error tells an API caller to open a support case, with no programmatic fix. | Let new paid accounts submit the use-case form, or say up front which accounts are restricted and for how long. Give an error that explains *why* the account is restricted. |
-| 16 | Oct 21 | Every Bedrock "tokens per day" quota on the new account is **0**, for example "Model invocation max tokens per day for Amazon Nova 2 Lite" and all other Nova models. The first playground message to Nova 2 Lite fails with `ThrottlingException: Too many tokens per day`. | Even Amazon's own models, which need no use-case form, can't serve a single request. The error reads like a usage limit, not an account restriction. | Give new accounts a small non-zero daily quota, or return an error that says the quota is 0 and how to raise it. |
-| 17 | Oct 21 | `bedrock list-foundation-models` in eu-north-1 lists `anthropic.claude-opus-5-5` as ACTIVE, but calling it on the Mantle endpoint in eu-north-1 returns `404 The model 'anthropic.claude-opus-5-5' does not exist`. Other Claude models return 403 instead. | The inconsistent answers (ACTIVE in the catalog, 404 at runtime, 403 for neighboring models) make it hard to tell a wrong model ID from an access problem. | Return the same access error for models in the catalog, and keep the catalog consistent with what the endpoint serves in that region. |
-| 18 | Oct 21 | Positive: `aws login` (CLI 2.38) signs the CLI in with the browser console session, and the Anthropic Bedrock SDK picks up those credentials automatically, with no access keys to create or store. It then offers to install AWS skills and an MCP server into detected coding agents. That's handy, but it's an opt-in we skipped to keep access narrow. | Getting the CLI and the app authenticated took about a minute. | Mention `aws login` in the Bedrock getting-started docs. |
+### 14. Free plan: one region, no bedrock-mantle endpoint (High)
+- **Task:** Call Claude on Bedrock from a new AWS account (free plan, $100 credits).
+- **Steps:** Opened the Bedrock console in us-east-1, then the new console for the bedrock-mantle endpoint.
+- **Expected:** The current Claude endpoint is available, as the sign-up credits suggest.
+- **Actual:**
+  - us-east-1 shows "Region unavailable… upgrade your plan", because the account is pinned to eu-north-1.
+  - The bedrock-mantle endpoint shows "Upgrade to paid plan to access this service".
+- **Workaround:** Used eu-north-1, then upgraded to the paid plan.
+- **Suggestion:** Say on the free-plan sign-up page which Bedrock endpoints and models are included.
+
+### 15. Paid new account: all Claude models denied, use-case form "not authorized" (Critical)
+- **Task:** Get access to any Claude model on Bedrock after upgrading.
+- **Steps:**
+  - Tried Opus 5.5, Sonnet 5, Haiku 4.5 and Opus 4.8 in the playground and the SDK, in eu-north-1, us-east-1 and us-west-2.
+  - Submitted the Anthropic use-case form in the console, then with `aws bedrock put-use-case-for-model-access`.
+- **Expected:** After the one-time use-case form, Claude models are available.
+- **Actual:**
+  - Every model returns `403 … is not available for this account`.
+  - The form fails in both places with `ValidationException: Your account is not authorized to perform this action. Please create a support case`.
+  - `get-foundation-model-availability` reports `authorizationStatus: NOT_AUTHORIZED`.
+- **Workaround:** Opened a support case. The app falls back to a price summary until access arrives.
+- **Suggestion:** Let new paid accounts submit the use-case form, or say up front which accounts are restricted, why, and for how long.
+
+### 16. All daily token quotas are 0, so even Nova is throttled (High)
+- **Task:** Use an Amazon model (no use-case form) as a fallback.
+- **Steps:** Sent "hi" to Nova 2 Lite in the playground, then checked `aws service-quotas list-service-quotas --service-code bedrock`.
+- **Expected:** A small default quota for a new paid account.
+- **Actual:** `ThrottlingException: Too many tokens per day` on the first message. Every Nova "tokens per day" quota is 0.
+- **Workaround:** Added it to the support case.
+- **Suggestion:** Start new accounts with a small non-zero quota, or return an error that says the quota is 0 and how to raise it.
+
+### 17. Opus 5.5 listed ACTIVE but returns 404 (Medium)
+- **Task:** Call `anthropic.claude-opus-5-5` on the Mantle endpoint.
+- **Steps:** `aws bedrock list-foundation-models --by-provider anthropic` in eu-north-1, then `messages.create` with the Anthropic Bedrock SDK.
+- **Expected:** A model listed ACTIVE behaves like its neighbors, which return 403 for our account.
+- **Actual:** `404 The model 'anthropic.claude-opus-5-5' does not exist` in eu-north-1 and us-west-2, while it's 403 in us-east-1. Sonnet 5 also returns 404 in us-west-2.
+- **Workaround:** Made the model configurable (`BEDROCK_MODEL`) so we can pick whichever model works once access is granted.
+- **Suggestion:** Return a consistent access error, and keep the catalog consistent with what each regional endpoint serves.
+
+### 18. Positive: `aws login` and SDK credential pickup (n/a)
+- **Task:** Authenticate the AWS CLI and the app locally without long-lived access keys.
+- **Steps:** `aws login --region eu-north-1`, then ran the app.
+- **Expected:** We expected to have to create an IAM user and access keys.
+- **Actual:** The CLI signed in through the browser console session, and the Anthropic Bedrock SDK picked up the credentials automatically. It took about a minute. The CLI also offers to install AWS skills and an MCP server into coding agents; we declined, to keep access narrow.
+- **Note:** The SDK's refresh of `aws login` tokens needs `AWS_REGION` in the environment, or it fails with "Region is missing".
+- **Suggestion:** Feature `aws login` in the Bedrock getting-started docs.
