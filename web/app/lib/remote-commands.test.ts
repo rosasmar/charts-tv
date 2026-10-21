@@ -187,3 +187,59 @@ describe("parseCommand – edge cases", () => {
     expect(parseCommand(cmd)?.type).toBe("pause");
   });
 });
+
+describe("parseCommand – price-level alerts", () => {
+  it("reads 'hits' with no direction, so the TV decides", () => {
+    expect(parseCommand("alert me if btc hits 83700")).toEqual({
+      type: "priceAlert",
+      symbol: "BTC",
+      price: 83_700,
+      direction: undefined,
+    });
+  });
+
+  it("reads $, thousands separators and k", () => {
+    expect(parseCommand("tell me when bitcoin reaches $83,700")).toMatchObject({ price: 83_700 });
+    expect(parseCommand("alert me if btc goes above 84k")).toMatchObject({
+      type: "priceAlert",
+      price: 84_000,
+      direction: "above",
+    });
+  });
+
+  it("reads below/under and falling verbs as a level below", () => {
+    expect(parseCommand("alert me if bitcoin falls below 80,000")).toMatchObject({
+      type: "priceAlert",
+      price: 80_000,
+      direction: "below",
+    });
+    expect(parseCommand("notify me when amazon drops to 250")).toMatchObject({
+      type: "priceAlert",
+      symbol: "AMZN",
+      price: 250,
+      direction: "below",
+    });
+  });
+
+  it("handles small prices", () => {
+    expect(parseCommand("alert me if doge hits 0.08")).toMatchObject({ type: "priceAlert", price: 0.08 });
+  });
+
+  it("isn't mistaken for navigation", () => {
+    expect(parseCommand("alert me if solana falls back to 100")).toMatchObject({
+      type: "priceAlert",
+      symbol: "SOL",
+      price: 100,
+    });
+  });
+});
+
+describe("parseCommand – alert without a direction", () => {
+  it("fires either way", () => {
+    expect(parseCommand("alert amazon 3%")).toEqual({ type: "alert", symbol: "AMZN", direction: undefined, pct: 3 });
+  });
+
+  it("still treats a bare small number after a move verb as a percentage", () => {
+    expect(parseCommand("alert me if bitcoin drops 5")).toMatchObject({ type: "alert", pct: 5, direction: "down" });
+  });
+});

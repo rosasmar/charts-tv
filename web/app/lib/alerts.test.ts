@@ -80,3 +80,52 @@ describe("demo plan through the alert engine", () => {
     ]);
   });
 });
+
+describe("directional move rules", () => {
+  const up: AlertRule[] = [{ symbol: "DOGE", kind: "move", pct: 5, direction: "up" }];
+  const down: AlertRule[] = [{ symbol: "DOGE", kind: "move", pct: 5, direction: "down" }];
+
+  it("only fire in their direction", () => {
+    const rising = [item("DOGE", 0.2, 4)];
+    const risen = [item("DOGE", 0.21, 6)];
+    expect(evaluateAlerts(rising, risen, up)).toHaveLength(1);
+    expect(evaluateAlerts(rising, risen, down)).toEqual([]);
+    const falling = [item("DOGE", 0.2, -4)];
+    const fallen = [item("DOGE", 0.19, -6)];
+    expect(evaluateAlerts(falling, fallen, down)).toHaveLength(1);
+    expect(evaluateAlerts(falling, fallen, up)).toEqual([]);
+  });
+});
+
+describe("alreadyTriggered", () => {
+  it("fires price rules that are already past their line", async () => {
+    const { alreadyTriggered } = await import("./alerts");
+    const btc = item("BTC", 84_000, 2);
+    expect(alreadyTriggered({ symbol: "BTC", kind: "above", price: 83_700 }, btc)).toMatchObject({
+      direction: "up",
+      title: "BTC is already above $83,700.00",
+    });
+    expect(alreadyTriggered({ symbol: "BTC", kind: "above", price: 85_000 }, btc)).toBeNull();
+    expect(alreadyTriggered({ symbol: "BTC", kind: "below", price: 85_000 }, btc)).toMatchObject({
+      direction: "down",
+    });
+  });
+
+  it("respects the direction of move rules", async () => {
+    const { alreadyTriggered } = await import("./alerts");
+    const xrp = item("XRP", 1.36, 4.9);
+    expect(alreadyTriggered({ symbol: "XRP", kind: "move", pct: 3, direction: "up" }, xrp)?.title).toBe(
+      "XRP is already up 4.9% today",
+    );
+    expect(alreadyTriggered({ symbol: "XRP", kind: "move", pct: 3, direction: "down" }, xrp)).toBeNull();
+    expect(alreadyTriggered({ symbol: "XRP", kind: "move", pct: 3 }, xrp)).not.toBeNull();
+    expect(alreadyTriggered({ symbol: "XRP", kind: "move", pct: 5 }, xrp)).toBeNull();
+  });
+
+  it("describes rules for the confirmation banner", async () => {
+    const { describeRule } = await import("./alerts");
+    expect(describeRule({ symbol: "BTC", kind: "above", price: 83_700 })).toBe("BTC rises above $83,700.00");
+    expect(describeRule({ symbol: "AMZN", kind: "move", pct: 3, direction: "down" })).toBe("AMZN drops 3% today");
+    expect(describeRule({ symbol: "AMZN", kind: "move", pct: 3 })).toBe("AMZN moves 3% today");
+  });
+});

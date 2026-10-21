@@ -7,12 +7,17 @@ import { Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
-import { DEFAULT_ALERT_RULES } from "@/app/lib/alerts";
-import type { AlertRule } from "@/app/lib/alerts";
+import {
+  DEFAULT_ALERT_RULES,
+  alreadyTriggered,
+  describeRule,
+  type AlertRule,
+} from "@/app/lib/alerts";
 import { withLivePrice } from "@/app/lib/candles";
 import { useCandles } from "@/app/lib/use-candles";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
+import { formatChange, formatPrice } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
 import { usePairing } from "@/app/lib/use-pairing-code";
@@ -26,7 +31,7 @@ const RESUME_AFTER_MS = 30_000;
 /** How long the on-screen badge for a media command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous" | "bell";
+type BadgeIcon = "play" | "pause" | "next" | "previous";
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -58,7 +63,7 @@ export function Dashboard({
     ],
     [demoRules, remoteAlertRules],
   );
-  const alert = usePriceAlerts(items, alertRules);
+  const { alert, push: pushAlert } = usePriceAlerts(items, alertRules);
   const candles = useCandles();
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -176,21 +181,36 @@ export function Dashboard({
         case "play":
           setRotationPaused(false);
           break;
-        case "alert": {
-          const newRule: AlertRule = {
+        case "alert":
+        case "priceAlert": {
+          const item = items.find((it) => it.symbol === cmd.symbol);
+          if (!item) break;
+          const rule: AlertRule =
+            cmd.type === "alert"
+              ? { symbol: cmd.symbol, kind: "move", pct: cmd.pct, direction: cmd.direction }
+              : {
+                  symbol: cmd.symbol,
+                  // "hits 83,700": above if that's higher than now, else below.
+                  kind: (cmd.direction ?? (cmd.price > item.price ? "above" : "below")) === "above" ? "above" : "below",
+                  price: cmd.price,
+                };
+          // Already past the line? Fire now; it would never cross again.
+          const now = alreadyTriggered(rule, item);
+          if (now) {
+            pushAlert(now);
+            break;
+          }
+          setRemoteAlertRules((prev) => [
+            ...prev.filter((r) => JSON.stringify(r) !== JSON.stringify(rule)),
+            rule,
+          ]);
+          pushAlert({
+            id: `set-${Date.now()}`,
             symbol: cmd.symbol,
-            kind: "move",
-            pct: cmd.pct,
-          };
-          setRemoteAlertRules((prev) => {
-            // Deduplicate: replace existing rule for same symbol/pct.
-            const filtered = prev.filter(
-              (r) =>
-                !(r.kind === "move" && r.symbol === cmd.symbol && r.pct === cmd.pct),
-            );
-            return [...filtered, newRule];
+            direction: "info",
+            title: describeRule(rule),
+            detail: `Now ${formatPrice(item.price)} · ${formatChange(item.change24h)} today`,
           });
-          showBadge("bell", `${cmd.symbol} ±${cmd.pct}%`);
           break;
         }
       }
@@ -288,10 +308,6 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
         <path d="M22 5l-10 7 10 7z" />
         <path d="M12 5L2 12l10 7z" />
       </>
-    ),
-    // R12: bell drawn as SVG, not an emoji (spec says not emoji).
-    bell: (
-      <path d="M12 2a7 7 0 0 1 7 7v3.586l1.707 1.707A1 1 0 0 1 20 16H4a1 1 0 0 1-.707-1.707L5 12.586V9a7 7 0 0 1 7-7zm0 18a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2z" />
     ),
   };
   return (
