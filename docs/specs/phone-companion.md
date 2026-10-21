@@ -4,7 +4,7 @@
 
 ## Goal
 
-Let a viewer control TickerTV from their phone. The TV shows a QR code. Scanning it opens a page on the phone where the viewer **types or speaks** commands such as "show Solana", "pause" or "alert me if bitcoin drops 5 percent", and **the TV reacts within about 2 seconds**.
+Let a viewer control TickerTV from their phone. The TV shows a QR code. Scanning it opens a page on the phone where the viewer **types or speaks** commands such as "show Solana", "pause" or "alert me if bitcoin drops 5 percent", and **the TV reacts within seconds**.
 
 This adds touch and free-form voice to the existing D-pad, media-button and visual interactions. That combination of voice, D-pad and visuals in one flow is the multi-modal experience the Fire TV judges reward.
 
@@ -54,7 +54,9 @@ This adds touch and free-form voice to the existing D-pad, media-button and visu
 - R10. Rate limiting: at most 30 POSTs per code per minute, using a Redis counter with a 60 s TTL. Over the limit returns 429.
 
 **TV integration**
-- R11. A client hook `useRemoteCommands(code, onCommand)` polls R7 every **1 s** while the page is visible, remembers the last `id`, and calls `onCommand` for each new command in order. Network errors are ignored and retried on the next tick.
+- R11. A client hook `useRemoteCommands(code, onCommand)` polls R7, remembers the last `id`, and calls `onCommand` for each new command in order. Network errors are ignored and retried on the next tick.
+  - **Polling is adaptive, to stay inside Upstash's free plan (500,000 commands a month):** it polls every **5 s** while idle, and switches to every **1 s** for **2 minutes** after any command arrives. A command therefore lands within about 5 s at first, then within about 1 s once the viewer is using the phone.
+  - It doesn't poll while `document.visibilityState` is `"hidden"`.
 - R12. In `dashboard.tsx`, remote commands map onto existing behavior:
   - `select` sets the selected and focused index to that symbol, holds rotation like an OK press, and shows the badge.
   - `next` / `previous` call `step(±1)`.
@@ -93,7 +95,7 @@ This adds touch and free-form voice to the existing D-pad, media-button and visu
 2. Locally without Redis, the TV hides the QR block, and `/api/remote/*` returns 503.
 3. On the production deployment with Redis:
    - Scanning the TV's QR code with a phone opens the remote.
-   - "show solana" switches the TV within about 2 s.
+   - "show solana" switches the TV within about 5 s, and later commands within about 1 s.
    - "pause" pauses rotation.
    - "alert me if bitcoin drops 5 percent" shows the bell badge with "BTC ±5%".
 4. On the Vega Virtual Device, the QR code is visible and scannable from a phone pointed at the Mac screen, and commands from the phone reach the VVD app.
