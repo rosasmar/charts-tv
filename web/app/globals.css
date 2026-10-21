@@ -116,6 +116,12 @@
 :root[data-theme="neon"] .candle-glow {
   display: inline;
 }
+/* Slimmer candle bodies in neon, so the glow reads as light, not bulk. */
+:root[data-theme="neon"] .candle-body {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scaleX(0.7);
+}
 
 @theme inline {
   --color-background: var(--background);
