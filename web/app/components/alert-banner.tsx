@@ -1,18 +1,21 @@
+import { createPortal } from "react-dom";
 import type { PriceAlert } from "@/app/lib/alerts";
 
 // Full-width banner across the top of the screen for a price alert, big
 // enough to catch from across the room. Green for up, red for down, neutral
-// for confirmations ("Alert set").
+// for confirmations ("Alert set"). It's drawn inside the page's <header> and
+// stretched 1rem past it, so it covers the whole clock and date instead of
+// ending partway through the date line, whatever size they are.
 export function AlertBanner({ alert }: { alert: PriceAlert | undefined }) {
   if (!alert) return null;
   const up = alert.direction === "up";
   const info = alert.direction === "info";
 
-  return (
+  const banner = (
     <div
       key={alert.id}
       role="alert"
-      className={`alert-enter fixed inset-x-[3rem] top-[2rem] z-50 flex items-center gap-[2rem] rounded-[1.75rem] border-2 px-[3rem] py-[1.75rem] ${
+      className={`alert-enter absolute inset-x-0 -inset-y-[1rem] z-50 flex items-center gap-[2rem] rounded-[1.75rem] border-2 px-[3rem] py-[1.75rem] ${
         info
           ? "border-highlight/40 bg-alert-info shadow-[0_0_4rem_-1rem_var(--alert-info-glow)]"
           : up
@@ -49,4 +52,6 @@ export function AlertBanner({ alert }: { alert: PriceAlert | undefined }) {
       </div>
     </div>
   );
+  const header = typeof document === "undefined" ? null : document.querySelector("header");
+  return header ? createPortal(banner, header) : banner;
 }

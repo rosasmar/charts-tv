@@ -21,7 +21,8 @@ export default async function Home() {
       <BackgroundPhoto />
       <NeonBackdrop />
 
-      <header className="flex items-start justify-between">
+      {/* relative: price alerts are drawn over it (see AlertBanner). */}
+      <header className="relative flex items-start justify-between">
         <Clock />
         <div className="flex items-start gap-[2.5rem]">
           {remoteAvailable && <RemoteBlock />}
