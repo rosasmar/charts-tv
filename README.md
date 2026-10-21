@@ -112,7 +112,7 @@ docs/
 - **Watchlist data is mock data for now.** A live market data feed is in progress. Alerts and the What's moving panel already work against whatever the feed provides.
 - **Alexa voice is untested.** The Vega Virtual Device can't inject voice commands. The remote's media buttons are tested; the voice path relies on the documented Media Session integration.
 - **The screensaver still starts after 5 minutes without remote input** on a real Fire TV. We couldn't find a supported way for a non-video app to keep the screen awake; details are in `docs/friction-log.md` (entries 12–13).
-- **Bedrock access depends on the AWS account.** Our new account is still blocked from Anthropic models (friction-log entries 14–17). The panel falls back gracefully until access is granted.
+- **Bedrock access depends on the AWS account.** AWS support told us our new account needs spend and usage history before it can use Anthropic models (friction-log entries 14–17). The panel falls back to a price summary until it runs on an account with access.
 
 ## Credits
 
