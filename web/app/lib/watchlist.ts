@@ -15,6 +15,7 @@ export const MOCK_WATCHLIST: WatchlistItem[] = [
   { symbol: "SOL", name: "Solana", price: 187.32, change24h: 5.67 },
   { symbol: "XRP", name: "XRP", price: 2.41, change24h: 0.32 },
   { symbol: "DOGE", name: "Dogecoin", price: 0.2134, change24h: -3.05 },
+  { symbol: "HYPE", name: "Hyperliquid", price: 80.99, change24h: 1.27 },
 ];
 
 export function formatPrice(price: number): string {

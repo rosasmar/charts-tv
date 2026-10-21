@@ -12,6 +12,7 @@ export const WATCHLIST_SOURCES: SymbolSource[] = [
   { symbol: "SOL", name: "Solana", provider: "coingecko", id: "solana" },
   { symbol: "XRP", name: "XRP", provider: "coingecko", id: "ripple" },
   { symbol: "DOGE", name: "Dogecoin", provider: "coingecko", id: "dogecoin" },
+  { symbol: "HYPE", name: "Hyperliquid", provider: "coingecko", id: "hyperliquid" },
 ];
 
 export type Quote = { price: number; change24h: number };

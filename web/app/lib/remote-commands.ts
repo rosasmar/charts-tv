@@ -24,6 +24,8 @@ const ALIASES: Record<string, string> = {
   ripple: "XRP",
   dogecoin: "DOGE",
   doge: "DOGE",
+  hyperliquid: "HYPE",
+  hype: "HYPE",
   amazon: "AMZN",
   amzn: "AMZN",
   "amazon stock": "AMZN",

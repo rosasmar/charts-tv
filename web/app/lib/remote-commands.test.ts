@@ -52,6 +52,14 @@ describe("parseCommand – select", () => {
     expect(parseCommand("show dogecoin")).toEqual({ type: "select", symbol: "DOGE" });
   });
 
+  it("show hyperliquid → HYPE", () => {
+    expect(parseCommand("show hyperliquid")).toEqual({ type: "select", symbol: "HYPE" });
+  });
+
+  it("bare ticker HYPE", () => {
+    expect(parseCommand("HYPE")).toEqual({ type: "select", symbol: "HYPE" });
+  });
+
   it("unknown symbol returns null", () => {
     expect(parseCommand("show foobar")).toBeNull();
   });
