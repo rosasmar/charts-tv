@@ -12,13 +12,15 @@ const REFRESH_MS = 10 * 60_000;
 // in `symbols`, or the default board.
 export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
   const [summary, setSummary] = useState<WhatsMoving>();
-  const query = symbols ? `?symbols=${encodeURIComponent(symbols.join(","))}` : "";
+  const url = symbols
+    ? `/api/whats-moving/custom?symbols=${encodeURIComponent(symbols.join(","))}`
+    : "/api/whats-moving";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch(`/api/whats-moving${query}`);
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: WhatsMoving = await res.json();
         if (!cancelled) setSummary(data);
@@ -32,7 +34,7 @@ export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [query]);
+  }, [url]);
 
   if (!summary) return null;
   return (
