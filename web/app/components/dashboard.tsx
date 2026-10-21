@@ -28,6 +28,8 @@ import type { RemoteCommand } from "@/app/lib/remote-commands";
 const ROTATE_MS = 10_000;
 /** Remote use pauses rotation; it resumes after this much idle time. */
 const RESUME_AFTER_MS = 30_000;
+/** The white focus ring fades out this long after the last remote press. */
+const RING_MS = 4_000;
 /** How long the on-screen badge for a media command stays up. */
 const BADGE_MS = 1_500;
 
@@ -71,6 +73,8 @@ export function Dashboard({
   const [paused, setPaused] = useState(false);
   const [badge, setBadge] = useState<Badge>();
   const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [ringVisible, setRingVisible] = useState(false);
+  const ringTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // R1: the page's pairing code, shared with the QR code in the header.
   const pairing = usePairing();
@@ -80,8 +84,17 @@ export function Dashboard({
     setHeld(true);
     clearTimeout(holdTimer.current);
     holdTimer.current = setTimeout(() => setHeld(false), RESUME_AFTER_MS);
+    setRingVisible(true);
+    clearTimeout(ringTimer.current);
+    ringTimer.current = setTimeout(() => setRingVisible(false), RING_MS);
   };
-  useEffect(() => () => clearTimeout(holdTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(holdTimer.current);
+      clearTimeout(ringTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!badge) return;
@@ -281,7 +294,7 @@ export function Dashboard({
         items={items}
         focusedIndex={focusedIndex}
         selectedSymbol={selected?.symbol ?? ""}
-        navigating={held}
+        navigating={ringVisible}
       />
     </main>
   );
