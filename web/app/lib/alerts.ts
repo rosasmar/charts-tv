@@ -29,6 +29,7 @@ export const DEFAULT_ALERT_RULES: AlertRule[] = [
   { symbol: "SOL", kind: "move", pct: 8 },
   { symbol: "XRP", kind: "move", pct: 8 },
   { symbol: "DOGE", kind: "move", pct: 8 },
+  { symbol: "HYPE", kind: "move", pct: 8 },
 ];
 
 // Compares two snapshots of the watchlist and returns the alerts whose
