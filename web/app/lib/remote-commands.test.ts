@@ -300,6 +300,9 @@ describe("parseCommand – background", () => {
     expect(parseCommand("start")).toEqual({ type: "play" });
     expect(parseCommand("clear")).toBeNull();
     expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", pct: 5 });
+  });
+});
+
 // ---- watchlist ---------------------------------------------------------------
 
 describe("parseCommand – watchlist", () => {

@@ -14,7 +14,7 @@ export type RemoteCommand =
   | { type: "background" }
   /** How strongly the background photo shows, 0–100. */
   | { type: "backgroundOpacity"; pct: number }
-  | { type: "clearBackground" };
+  | { type: "clearBackground" }
   /** The viewer's own board, in order; "*" marks favorites: "watchlist *BTC AMZN NVDA". */
   | { type: "watchlist"; symbols: string[]; favorites: string[] }
   /** Pin a symbol to the top of the board, or unpin it. */
