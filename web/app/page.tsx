@@ -24,7 +24,7 @@ export default async function Home() {
         <div className="flex items-start gap-[2.5rem]">
           {remoteAvailable && <RemoteBlock />}
           <div className="text-right">
-            <div className="text-[2.5rem] font-semibold tracking-tight">
+            <div className="wordmark text-[2.5rem] font-semibold tracking-tight">
               ChartsTV
             </div>
             <div className="mt-2 text-[1.25rem] text-muted">Crypto &amp; stocks</div>

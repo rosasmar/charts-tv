@@ -82,7 +82,8 @@ export function Watchlist({ items, favorites, focusedIndex, selectedSymbol, navi
           style={{
             height: highlight.height,
             transform: `translateY(${highlight.top}px) scale(1.03)`,
-            boxShadow: `0 0 2.5rem -0.5rem ${glow}`,
+            // The ring itself glows too in the neon theme.
+            boxShadow: `0 0 2.5rem -0.5rem ${glow}${navigating ? ", var(--ring-glow)" : ""}`,
           }}
         />
       )}
@@ -128,7 +129,7 @@ function WatchlistTile({
   const size = compact ? COMPACT_SIZE : FULL_SIZE;
   return (
     <div
-      className={`relative flex h-full items-center justify-between rounded-[1.5rem] border border-panel-border bg-panel ${size.padding}`}
+      className={`relative flex h-full items-center justify-between rounded-[1.5rem] border border-panel-border bg-panel ${size.padding} [box-shadow:var(--panel-glow)]`}
     >
       {selected && (
         <div

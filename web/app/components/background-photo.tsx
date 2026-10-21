@@ -28,7 +28,7 @@ export function BackgroundPhoto() {
 
   if (!photo || opacity === undefined) return null;
   return (
-    <div aria-hidden className="pointer-events-none fixed -inset-[1rem] -z-10">
+    <div aria-hidden className="background-photo pointer-events-none fixed -inset-[1rem] -z-10">
       {/* A data URL from localStorage: next/image has nothing to optimize. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

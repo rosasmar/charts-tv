@@ -328,6 +328,30 @@ describe("parseCommand – theme", () => {
     expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
     expect(parseCommand("dark")).toBeNull();
   });
+
+  it("neon mode / neon theme / neon lights → neon", () => {
+    expect(parseCommand("neon mode")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("Neon theme")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("neon lights")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("turn on the neon light please")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("switch to neon mode")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("start neon lights")).toEqual({ type: "theme", theme: "neon" });
+  });
+
+  it("turning neon off goes back to dark", () => {
+    expect(parseCommand("turn off the neon lights")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("disable neon mode")).toEqual({ type: "theme", theme: "dark" });
+  });
+
+  it("neon doesn't change the other phrasings", () => {
+    expect(parseCommand("light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("night mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("auto theme")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("night lights")).toBeNull();
+    expect(parseCommand("neon")).toBeNull();
+    expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", symbol: "BTC" });
+    expect(parseCommand("show solana")).toEqual({ type: "select", symbol: "SOL" });
+  });
 });
 
 // ---- background ---------------------------------------------------------------

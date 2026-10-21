@@ -313,7 +313,7 @@ export function Dashboard({
       <AlertBanner alert={alert} />
       <section
         aria-label="Chart"
-        className="relative flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-panel-border bg-panel p-[2.5rem]"
+        className="relative flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-panel-border bg-panel p-[2.5rem] [box-shadow:var(--panel-glow)]"
       >
         <div className="flex items-start justify-between">
           {selected && (
@@ -345,7 +345,7 @@ export function Dashboard({
           <div
             key={badge.id}
             role="status"
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-highlight/15 bg-background/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight"
+            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-highlight/15 bg-background/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight [box-shadow:var(--badge-glow)]"
           >
             <BadgeGlyph icon={badge.icon} />
             {badge.text}
@@ -405,7 +405,7 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
         <rect x="14" y="9" width="8" height="8" rx="1.5" />
       </>
     ),
-    // Sun, moon, and a half-filled circle for auto.
+    // Sun, moon, a half-filled circle for auto and a lightning bolt for neon.
     light: (
       <>
         <circle cx="12" cy="12" r="4.5" />
@@ -432,6 +432,7 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
       </>
     ),
     star: <path d={STAR_PATH} />,
+    neon: <path d="M13.5 1.5L3.5 13.5h7.5l-1.5 9 10-12h-7.5z" />,
   };
   return (
     <svg

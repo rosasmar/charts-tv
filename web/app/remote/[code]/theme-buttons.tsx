@@ -4,12 +4,14 @@ const THEMES = [
   { label: "Dark", command: "dark mode" },
   { label: "Light", command: "light mode" },
   { label: "Auto", command: "auto mode" },
+  { label: "Neon", command: "neon mode" },
 ];
 
 /**
  * "Display" section of the phone remote: picks the TV's theme by sending the
  * same text commands a viewer could type. Auto is light by day and dark from
- * 22:00 to 07:00. The TV remembers the choice across reloads.
+ * 22:00 to 07:00; neon is just for fun. The TV remembers the choice across
+ * reloads.
  */
 // TODO: Highlight the TV's current theme here once the TV can report its
 // state back to the phone (commands only flow phone → TV today).
