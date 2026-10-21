@@ -1,5 +1,6 @@
 import { BackgroundPhoto } from "@/app/components/background-photo";
 import { BurnInShift } from "@/app/components/burn-in-shift";
+import { NeonBackdrop } from "@/app/components/neon-backdrop";
 import { Clock } from "@/app/components/clock";
 import { Dashboard } from "@/app/components/dashboard";
 import { NewsTicker } from "@/app/components/news-ticker";
@@ -18,6 +19,7 @@ export default async function Home() {
       {/* First, so a saved light theme is set before anything paints. */}
       <Theme />
       <BackgroundPhoto />
+      <NeonBackdrop />
 
       <header className="flex items-start justify-between">
         <Clock />

@@ -69,20 +69,22 @@
   --panel-border: rgba(0, 0, 0, 0.12);
 }
 
-/* Neon lights: deep purple-navy, panels edged in glowing cyan, a magenta
-   focus ring, electric green and hot pink for up and down. Glows are static
-   box-shadows (no filters or backdrop blur), and numbers get no text-shadow
-   so prices stay crisp from across the room. */
+/* Neon lights: a navy-to-purple gradient sky with soft pink and blue glows
+   (neon-backdrop.tsx), violet-edged panels that let it show through, a
+   magenta focus ring, and electric blue and hot pink for up and down, with a
+   halo around every candle. Glows are static box-shadows and layered SVG (no
+   filters or backdrop blur), and numbers get no text-shadow so prices stay
+   crisp from across the room. */
 :root[data-theme="neon"] {
   --background: #0a0619;
   --foreground: #f4f1ff;
   --muted: #a49bd0;
-  --panel: #120a2a;
-  --panel-border: rgba(45, 226, 255, 0.55);
-  --up: #39ff88;
-  --down: #ff4d7d;
+  --panel: rgb(18 10 42 / 0.8);
+  --panel-border: rgba(176, 120, 255, 0.6);
+  --up: #4dabff;
+  --down: #ff3d7f;
   --highlight: #ff4fd8;
-  --chart-grid: rgba(45, 226, 255, 0.13);
+  --chart-grid: rgba(176, 120, 255, 0.14);
   --price-tag-text: #0a0619;
   --alert-info: #160c35;
   --alert-info-glow: #ff4fd8;
@@ -91,9 +93,9 @@
   /* A solid color on a solid background, so the code still scans. */
   --qr-modules: #2de2ff;
   --qr-background: #0a0619;
-  --panel-glow: 0 0 1rem rgba(45, 226, 255, 0.45), inset 0 0 1rem rgba(45, 226, 255, 0.12);
-  --badge-glow: 0 0 2rem -0.25rem rgba(255, 79, 216, 0.6);
-  --ring-glow: 0 0 1.25rem rgba(255, 79, 216, 0.7);
+  --panel-glow: 0 0 1.5rem rgba(176, 120, 255, 0.45), inset 0 0 1.25rem rgba(176, 120, 255, 0.14);
+  --badge-glow: 0 0 2.5rem rgba(255, 79, 216, 0.7);
+  --ring-glow: 0 0 1rem rgba(255, 79, 216, 0.9), 0 0 2.5rem rgba(255, 79, 216, 0.5);
 }
 
 /* Neon is its own look: a background photo (and its header scrim) is hidden
@@ -101,6 +103,18 @@
    panels above already override the translucent photo panels. */
 :root[data-theme="neon"] .background-photo {
   display: none;
+}
+
+/* Neon-only layers: the gradient backdrop and the candle halos. */
+.neon-backdrop,
+.candle-glow {
+  display: none;
+}
+:root[data-theme="neon"] .neon-backdrop {
+  display: block;
+}
+:root[data-theme="neon"] .candle-glow {
+  display: inline;
 }
 
 @theme inline {
@@ -224,7 +238,8 @@ html:has([data-phone-remote]) body {
   text-shadow:
     0 0 0.15rem #ff8ae6,
     0 0 0.75rem #ff4fd8,
-    0 0 1.75rem rgba(255, 79, 216, 0.6);
+    0 0 1.75rem rgba(255, 79, 216, 0.7),
+    0 0 3.5rem rgba(77, 171, 255, 0.5);
   animation: neon-flicker 1.4s steps(1, end);
 }
 
