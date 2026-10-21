@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { parseCommand } from "@/app/lib/remote-commands";
 import { isValidCode } from "@/app/lib/pairing-code";
 import { WatchlistPicker } from "./watchlist-picker";
+import { BackgroundSection } from "./background-section";
 
 type Status = "idle" | "sending" | "sent" | "error" | "not_understood" | "unreachable";
 
@@ -216,6 +217,7 @@ export function RemoteUI({ code }: { code: string }) {
       </div>
 
       <WatchlistPicker send={sendText} />
+      <BackgroundSection code={code} />
 
       {/* Example commands (R14) */}
       <div style={styles.examples}>

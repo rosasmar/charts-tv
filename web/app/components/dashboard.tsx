@@ -27,6 +27,11 @@ import {
 import { formatChange, formatPrice, pinFavorites } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
+import {
+  clearBackground,
+  loadRemoteBackground,
+  setBackgroundOpacity,
+} from "@/app/lib/use-background";
 import { usePairing } from "@/app/lib/use-pairing-code";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 import type { RemoteCommand } from "@/app/lib/remote-commands";
@@ -259,6 +264,15 @@ export function Dashboard({
           });
           break;
         }
+        case "background":
+          if (pairing) loadRemoteBackground(pairing.code);
+          break;
+        case "backgroundOpacity":
+          setBackgroundOpacity(cmd.pct);
+          break;
+        case "clearBackground":
+          clearBackground();
+          break;
       }
   };
 
