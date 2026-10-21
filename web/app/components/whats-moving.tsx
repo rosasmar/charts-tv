@@ -46,9 +46,10 @@ export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
         <span className="min-w-0 flex-1 truncate text-[1.875rem] font-semibold tracking-tight">
           {summary.headline}
         </span>
-        <span className="shrink-0 text-[1.125rem] text-muted">
-          {summary.source === "claude" ? "Claude on Amazon Bedrock" : "From prices"}
-        </span>
+        {/* Credit Claude when it wrote the summary; the price fallback needs no label. */}
+        {summary.source === "claude" && (
+          <span className="shrink-0 text-[1.125rem] text-muted">Claude on Amazon Bedrock</span>
+        )}
       </div>
       {summary.points.length > 0 && (
         <ul className="mt-[0.375rem] flex flex-wrap gap-x-[2rem] gap-y-[0.25rem] text-[1.375rem] text-foreground/80">
