@@ -3,7 +3,10 @@ import {
   WATCHLIST_SOURCES,
   buildWatchlist,
   parseCoinGeckoPrices,
+  parseSymbolList,
   parseYahooQuote,
+  resolveSource,
+  tradesAroundTheClock,
   type Quote,
 } from "./market";
 
@@ -51,6 +54,47 @@ describe("parseYahooQuote", () => {
     expect(parseYahooQuote({ chart: { result: null, error: { code: "Not Found" } } })).toBeUndefined();
     expect(parseYahooQuote(chart({}))).toBeUndefined();
   });
+
+  it("reads the short name and tidies its padding", () => {
+    expect(
+      parseYahooQuote(chart({ regularMarketPrice: 221.5, shortName: "NVIDIA CORP.     R" }))?.name,
+    ).toBe("NVIDIA CORP. R");
+    expect(parseYahooQuote(chart({ regularMarketPrice: 1, longName: "Apple Inc." }))?.name).toBe(
+      "Apple Inc.",
+    );
+  });
+});
+
+describe("parseSymbolList", () => {
+  it("uppercases, dedupes and drops invalid symbols", () => {
+    expect(parseSymbolList("amzn, nvda,BTC,amzn,not a ticker")).toEqual(["AMZN", "NVDA", "BTC"]);
+    expect(parseSymbolList("^GSPC,BRK-B,ADA-USD,GC=F")).toEqual(["^GSPC", "BRK-B", "ADA-USD", "GC=F"]);
+  });
+
+  it("caps the list at 10", () => {
+    const many = Array.from({ length: 12 }, (_, i) => `S${i}`).join(",");
+    expect(parseSymbolList(many)).toHaveLength(10);
+  });
+
+  it("returns null for nothing usable, meaning the default board", () => {
+    expect(parseSymbolList(null)).toBeNull();
+    expect(parseSymbolList("")).toBeNull();
+    expect(parseSymbolList("!!,  ,")).toBeNull();
+  });
+});
+
+describe("resolveSource", () => {
+  it("keeps default-board coins on CoinGecko and sends the rest to Yahoo", () => {
+    expect(resolveSource("BTC")).toMatchObject({ provider: "coingecko", id: "bitcoin" });
+    expect(resolveSource("NVDA")).toEqual({ symbol: "NVDA", name: "NVDA", provider: "yahoo", id: "NVDA" });
+  });
+
+  it("knows which symbols trade around the clock", () => {
+    expect(tradesAroundTheClock(resolveSource("ETH"))).toBe(true);
+    expect(tradesAroundTheClock(resolveSource("ADA-USD"))).toBe(true);
+    expect(tradesAroundTheClock(resolveSource("AMZN"))).toBe(false);
+    expect(tradesAroundTheClock(resolveSource("NVDA"))).toBe(false);
+  });
 });
 
 describe("buildWatchlist", () => {
@@ -63,6 +107,21 @@ describe("buildWatchlist", () => {
     expect(items.map((i) => i.symbol)).toEqual(WATCHLIST_SOURCES.map((s) => s.symbol));
     expect(items[0]).toEqual({ symbol: "AMZN", name: "Amazon", price: 262, change24h: -0.5 });
     expect(live).toEqual(["AMZN", "BTC"]);
+  });
+
+  it("builds a picked list in its own order, naming new symbols from their quote", () => {
+    const quotes = new Map<string, Quote>([
+      ["NVDA", { price: 221.5, change24h: 1.2, name: "NVIDIA Corporation" }],
+      ["AMZN", { price: 262, change24h: -0.5, name: "Amazon.com, Inc." }],
+    ]);
+    const sources = ["NVDA", "AMZN", "TSLA"].map(resolveSource);
+    const { items, live } = buildWatchlist(quotes, [], sources);
+    expect(items).toEqual([
+      { symbol: "NVDA", name: "NVIDIA Corporation", price: 221.5, change24h: 1.2 },
+      { symbol: "AMZN", name: "Amazon", price: 262, change24h: -0.5 },
+      { symbol: "TSLA", name: "TSLA", price: 0, change24h: 0 },
+    ]);
+    expect(live).toEqual(["NVDA", "AMZN"]);
   });
 
   it("falls back to the previous value for symbols without a quote", () => {

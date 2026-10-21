@@ -6,16 +6,18 @@ import type { Candle } from "./candles";
 /** The route caches candles for ~5 minutes; check back at the same pace. */
 const POLL_MS = 5 * 60_000;
 
-// Candles for every watchlist symbol, from /api/candles. Keeps the last good
-// set if a refresh fails.
-export function useCandles(): Record<string, Candle[]> {
+// Candles for every watchlist symbol (the default board, or the picked list
+// in `symbols`), from /api/candles. Keeps the last good set if a refresh
+// fails, and refetches at once when the list changes.
+export function useCandles(symbols: string[] | null): Record<string, Candle[]> {
   const [candles, setCandles] = useState<Record<string, Candle[]>>({});
+  const query = symbols ? `?symbols=${encodeURIComponent(symbols.join(","))}` : "";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/api/candles");
+        const res = await fetch(`/api/candles${query}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: Record<string, Candle[]> = await res.json();
         if (!cancelled && Object.keys(data).length) setCandles(data);
@@ -29,7 +31,7 @@ export function useCandles(): Record<string, Candle[]> {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [query]);
 
   return candles;
 }

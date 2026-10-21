@@ -251,3 +251,42 @@ describe("parseCommand – alert without a direction", () => {
     expect(parseCommand("alert me if bitcoin drops 5")).toMatchObject({ type: "alert", pct: 5, direction: "down" });
   });
 });
+
+// ---- watchlist ---------------------------------------------------------------
+
+describe("parseCommand – watchlist", () => {
+  it("reads the list in order", () => {
+    expect(parseCommand("watchlist AMZN NVDA BTC")).toEqual({
+      type: "watchlist",
+      symbols: ["AMZN", "NVDA", "BTC"],
+    });
+  });
+
+  it("accepts commas, lowercase, names and aliases, and drops repeats", () => {
+    expect(parseCommand("Watchlist: nvda, bitcoin,ethereum  NVDA")).toEqual({
+      type: "watchlist",
+      symbols: ["NVDA", "BTC", "ETH"],
+    });
+  });
+
+  it("keeps tickers that are also filler words", () => {
+    expect(parseCommand("watchlist A IT ME")).toEqual({ type: "watchlist", symbols: ["A", "IT", "ME"] });
+  });
+
+  it("accepts index, class-share, coin-pair and future tickers", () => {
+    expect(parseCommand("watchlist ^GSPC BRK-B ADA-USD GC=F")).toEqual({
+      type: "watchlist",
+      symbols: ["^GSPC", "BRK-B", "ADA-USD", "GC=F"],
+    });
+  });
+
+  it("rejects an empty list, more than 10 symbols, or a word that isn't a ticker", () => {
+    expect(parseCommand("watchlist")).toBeNull();
+    expect(parseCommand(`watchlist ${Array.from({ length: 11 }, (_, i) => `S${i}`).join(" ")}`)).toBeNull();
+    expect(parseCommand("watchlist AMZN not!a!ticker")).toBeNull();
+  });
+
+  it("isn't confused by tickers that are command words", () => {
+    expect(parseCommand("watchlist STOP NEXT")).toEqual({ type: "watchlist", symbols: ["STOP", "NEXT"] });
+  });
+});
