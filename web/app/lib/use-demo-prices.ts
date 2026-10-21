@@ -27,13 +27,13 @@ export function buildDemoPlan(items: WatchlistItem[]): DemoPlan {
   const amzn = items.find((i) => i.symbol === "AMZN");
   if (amzn && amzn.price > 0) {
     const level = Math.floor(amzn.price / 5) * 5 + 5;
-    steps.push({ atMs: 6_000, symbol: "AMZN", ...moveTo(amzn, round(level + 0.42, 2)) });
+    steps.push({ atMs: 15_000, symbol: "AMZN", ...moveTo(amzn, round(level + 0.42, 2)) });
     rules.push({ symbol: "AMZN", kind: "above", price: level });
   }
   const doge = items.find((i) => i.symbol === "DOGE");
   if (doge && doge.price > 0) {
     const level = round(doge.price * 0.97, 4);
-    steps.push({ atMs: 22_000, symbol: "DOGE", ...moveTo(doge, round(level * 0.996, 4)) });
+    steps.push({ atMs: 30_000, symbol: "DOGE", ...moveTo(doge, round(level * 0.996, 4)) });
     rules.push({ symbol: "DOGE", kind: "below", price: level });
   }
   return { steps, rules };
