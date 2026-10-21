@@ -10,17 +10,21 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 
 | | What it does |
 |---|---|
-| **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
+| **Always-on layout** | Pure black screen (or a light theme, see below) with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
-| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. From the phone you can switch to **1-minute candles** for the last hour (crypto from Kraken, AMZN from the latest trading session), and the TV remembers the choice. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
-| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent", "1 minute candles" / "30 minute candles", or tap 1m / 30m), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for stocks. From the phone you can switch to **1-minute candles** for the last hour (coins from Kraken, stocks from the latest trading session), and the TV remembers the choice. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "alert me if bitcoin drops 5 percent", "1 minute candles" / "30 minute candles", or tap 1m / 30m), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Custom background** | From the phone remote, pick a photo to replace the black background and set how strongly it shows. The panels turn translucent, and denser as the photo gets stronger, so text stays readable from across the room. Night dim still covers it, and the photo stays on the TV, not the server (see [Phone companion](#phone-companion-optional)). |
+| **Pick your watchlist** | From the phone remote, search for any US stock, ETF, index or coin, build a list of up to 10 and send it to the TV. The TV remembers it across restarts, and lists of 8–10 switch to compact tiles so they still fit. "Reset" goes back to the default board. |
+| **Favorites** | Star symbols in the phone's watchlist, or say "favorite bitcoin" / "unpin bitcoin", and they're pinned to the top of the board with a gold star. The TV remembers them across restarts. |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
-| **Live prices** | AMZN plus five major coins, refreshed every minute: crypto from CoinGecko, AMZN from Yahoo Finance. Fetched server-side and shared by every TV, and any provider can fail without leaving gaps on the board. |
+| **Live prices** | By default AMZN plus six major coins, refreshed every minute: those coins from CoinGecko, stocks and anything else picked on the phone from Yahoo Finance. Fetched server-side and shared by every TV showing the same symbols, and any provider can fail without leaving gaps on the board. |
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
+| **Light mode** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast. Pick Dark (the default), Light or Auto (light by day, dark from 22:00 to 07:00) with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode" or "auto mode". The TV remembers the choice across reloads. |
 | **Burn-in protection** | The whole layout drifts 6 px to a new position every 2 minutes, cycling through 9 positions. |
 
 ### Remote controls
@@ -32,6 +36,21 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | ⏯ Play/Pause | Stop or start auto-rotation |
 | ⏩ / ⏪ | Next / previous coin |
 | Back | Not intercepted by the app |
+
+### Phone commands
+
+Type or say these on the phone remote:
+
+| Command | Action |
+|---|---|
+| "show solana", "BTC", "amazon stock" | Show that coin or stock in the chart panel |
+| "next" / "previous", "back" | Next / previous coin |
+| "pause", "stop" / "play", "resume" | Stop or start auto-rotation |
+| "alert me if bitcoin drops 5 percent", "alert me if btc hits 84k" | Set a move or price-level alert |
+| "background opacity 40%" | Set how strongly the background photo shows (0–100%) |
+| "remove background" | Go back to the plain black screen |
+
+The phone's **Background** section has the same controls as buttons: *Choose photo*, an opacity slider (sent when you let go) and *Remove*.
 
 ## Architecture
 
@@ -68,7 +87,7 @@ flowchart LR
 cd web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest: alerts, RSS parsing, what's-moving, night dim, pixel shift
+npm test         # vitest: alerts, RSS parsing, what's-moving, night dim, theme, pixel shift
 npm run lint
 npm run build
 ```
@@ -81,6 +100,7 @@ Useful URL flags:
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
 | `?candles=1m` / `?candles=30m` | Show 1-minute or 30-minute candles, overriding the choice saved on the TV |
+| `?theme=light` / `?theme=dark` / `?theme=auto` | Use this theme for the page load, over the one saved from the phone |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
 | `?news=amazon` | Only About Amazon headlines in the ticker |
 
@@ -108,6 +128,8 @@ The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`, which is the produ
 
 The phone remote needs a small Redis store to pass commands from the phone to the TV. On Vercel, add **Upstash for Redis** from the Marketplace to the project. It sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`; plain `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` work too. Without them the QR code is hidden and everything else works. Commands expire after 1 hour, are rate-limited to 30 a minute per TV, and the TV polls every 5 s, or every 1 s for two minutes after a command.
 
+**Background photos only pass through the server.** The phone crops the photo to 16:9 and re-encodes it as a JPEG of at most 1920×1080 and 1 MB, which also strips its EXIF data, such as where it was taken. The server holds it in Redis only until the TV fetches it: the fetch deletes it in the same Redis command, and if the TV never asks, it expires after 10 minutes. The TV keeps the photo in its own `localStorage` so it survives a reload, and "remove background" deletes it there. Uploads use the same Redis config and count toward the same 30-a-minute limit; no extra setup is needed.
+
 ## Built with Kiro Crew
 
 The phone companion was implemented by **[Kiro Crew](https://kiro.dev/docs/crew/)**, AWS's autonomous agent workspace for Kiro, running locally with Kiro CLI:
@@ -120,9 +142,9 @@ The phone companion was implemented by **[Kiro Crew](https://kiro.dev/docs/crew/
 
 ```
 web/                 Next.js app (UI + API routes)
-  app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, burn-in
-  app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
-  app/api/           /api/market, /api/candles, /api/candles/1m, /api/news, /api/whats-moving, /api/remote/[code]/commands
+  app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, theme, burn-in
+  app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, theme, pixel-shift)
+  app/api/           /api/market, /api/candles, /api/candles/1m, /api/news, /api/whats-moving, /api/remote/[code]/commands and /background
   app/remote/        the phone remote page (/remote/[code])
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)
 docs/
@@ -133,7 +155,7 @@ docs/
 
 ## Known limitations
 
-- **AMZN comes from Yahoo Finance's unofficial chart endpoint.** It needs no key, but it isn't a published API. If it fails, AMZN keeps its last value. Crypto prices come from CoinGecko's free public API.
+- **Stocks come from Yahoo Finance's unofficial chart endpoint**, and the phone's symbol search from its search endpoint. They need no key, but they aren't published APIs. If a quote fails, that symbol keeps its last value. The default board's coins come from CoinGecko's free public API.
 - **Alexa voice is untested.** The Vega Virtual Device can't inject voice commands. The remote's media buttons are tested; the voice path relies on the documented Media Session integration.
 - **The screensaver still starts after 5 minutes without remote input** on a real Fire TV. We couldn't find a supported way for a non-video app to keep the screen awake; details are in `docs/friction-log.md` (entries 12–13).
 - **Bedrock access depends on the AWS account.** AWS support told us our new account needs spend and usage history before it can use Anthropic models (friction-log entries 14–17). The panel falls back to a price summary until it runs on an account with access.

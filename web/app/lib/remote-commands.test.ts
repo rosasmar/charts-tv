@@ -52,6 +52,14 @@ describe("parseCommand – select", () => {
     expect(parseCommand("show dogecoin")).toEqual({ type: "select", symbol: "DOGE" });
   });
 
+  it("show hyperliquid → HYPE", () => {
+    expect(parseCommand("show hyperliquid")).toEqual({ type: "select", symbol: "HYPE" });
+  });
+
+  it("bare ticker HYPE", () => {
+    expect(parseCommand("HYPE")).toEqual({ type: "select", symbol: "HYPE" });
+  });
+
   it("unknown symbol returns null", () => {
     expect(parseCommand("show foobar")).toBeNull();
   });
@@ -281,5 +289,178 @@ describe("parseCommand – alert without a direction", () => {
 
   it("still treats a bare small number after a move verb as a percentage", () => {
     expect(parseCommand("alert me if bitcoin drops 5")).toMatchObject({ type: "alert", pct: 5, direction: "down" });
+  });
+});
+
+describe("parseCommand – theme", () => {
+  it("light mode / day mode → light", () => {
+    expect(parseCommand("light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("Day mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("light theme please")).toEqual({ type: "theme", theme: "light" });
+  });
+
+  it("dark mode / night mode → dark", () => {
+    expect(parseCommand("dark mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("night mode")).toEqual({ type: "theme", theme: "dark" });
+  });
+
+  it("auto mode / auto theme → auto", () => {
+    expect(parseCommand("auto mode")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("auto theme")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("automatic theme")).toEqual({ type: "theme", theme: "auto" });
+  });
+
+  it("isn't mistaken for play or select", () => {
+    expect(parseCommand("start dark mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("switch to light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("turn on day mode")).toEqual({ type: "theme", theme: "light" });
+  });
+
+  it("turning a theme off picks the other one", () => {
+    expect(parseCommand("turn off dark mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("disable light mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("turn auto mode off")).toBeNull();
+  });
+
+  it("leaves other commands alone", () => {
+    expect(parseCommand("stop")).toEqual({ type: "pause" });
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
+    expect(parseCommand("dark")).toBeNull();
+  });
+});
+
+// ---- background ---------------------------------------------------------------
+
+describe("parseCommand – background", () => {
+  it("background opacity 40% → backgroundOpacity 40", () => {
+    expect(parseCommand("background opacity 40%")).toEqual({ type: "backgroundOpacity", pct: 40 });
+  });
+
+  it("works without the % sign, with 'percent' and with filler words", () => {
+    expect(parseCommand("background opacity 40")).toEqual({ type: "backgroundOpacity", pct: 40 });
+    expect(parseCommand("Set the background opacity to 75 percent please")).toEqual({
+      type: "backgroundOpacity",
+      pct: 75,
+    });
+  });
+
+  it("accepts 0 and 100, rounds decimals", () => {
+    expect(parseCommand("background opacity 0%")).toEqual({ type: "backgroundOpacity", pct: 0 });
+    expect(parseCommand("background opacity 100%")).toEqual({ type: "backgroundOpacity", pct: 100 });
+    expect(parseCommand("background opacity 40.6")).toEqual({ type: "backgroundOpacity", pct: 41 });
+  });
+
+  it("rejects out-of-range or missing values", () => {
+    expect(parseCommand("background opacity 101%")).toBeNull();
+    expect(parseCommand("background opacity -10")).toBeNull();
+    expect(parseCommand("background opacity")).toBeNull();
+  });
+
+  it("remove / clear background → clearBackground", () => {
+    expect(parseCommand("remove background")).toEqual({ type: "clearBackground" });
+    expect(parseCommand("Clear the background")).toEqual({ type: "clearBackground" });
+    expect(parseCommand("delete background")).toEqual({ type: "clearBackground" });
+  });
+
+  it("never falls through to other commands", () => {
+    // "stop" would be pause, "show" a select, and "back" previous.
+    expect(parseCommand("stop background")).toBeNull();
+    expect(parseCommand("show background")).toBeNull();
+    expect(parseCommand("background")).toBeNull();
+  });
+
+  it("can't produce the upload notice from text", () => {
+    expect(parseCommand("background photo")).toBeNull();
+  });
+
+  it("leaves the existing commands alone", () => {
+    expect(parseCommand("back")).toEqual({ type: "previous" });
+    expect(parseCommand("stop")).toEqual({ type: "pause" });
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("clear")).toBeNull();
+    expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", pct: 5 });
+  });
+});
+
+// ---- watchlist ---------------------------------------------------------------
+
+describe("parseCommand – watchlist", () => {
+  it("reads the list in order", () => {
+    expect(parseCommand("watchlist AMZN NVDA BTC")).toEqual({
+      type: "watchlist",
+      symbols: ["AMZN", "NVDA", "BTC"],
+      favorites: [],
+    });
+  });
+
+  it("accepts commas, lowercase, names and aliases, and drops repeats", () => {
+    expect(parseCommand("Watchlist: nvda, bitcoin,ethereum  NVDA")).toEqual({
+      type: "watchlist",
+      symbols: ["NVDA", "BTC", "ETH"],
+      favorites: [],
+    });
+  });
+
+  it("keeps tickers that are also filler words", () => {
+    expect(parseCommand("watchlist A IT ME")).toMatchObject({ symbols: ["A", "IT", "ME"] });
+  });
+
+  it("accepts index, class-share, coin-pair and future tickers", () => {
+    expect(parseCommand("watchlist ^GSPC BRK-B ADA-USD GC=F")).toMatchObject({
+      symbols: ["^GSPC", "BRK-B", "ADA-USD", "GC=F"],
+    });
+  });
+
+  it("rejects an empty list, more than 10 symbols, or a word that isn't a ticker", () => {
+    expect(parseCommand("watchlist")).toBeNull();
+    expect(parseCommand(`watchlist ${Array.from({ length: 11 }, (_, i) => `S${i}`).join(" ")}`)).toBeNull();
+    expect(parseCommand("watchlist AMZN not!a!ticker")).toBeNull();
+  });
+
+  it("reads * as a favorite", () => {
+    expect(parseCommand("watchlist *BTC AMZN *hype NVDA *BTC")).toEqual({
+      type: "watchlist",
+      symbols: ["BTC", "AMZN", "HYPE", "NVDA"],
+      favorites: ["BTC", "HYPE"],
+    });
+    expect(parseCommand("watchlist *")).toBeNull();
+  });
+
+  it("isn't confused by tickers that are command words", () => {
+    expect(parseCommand("watchlist STOP NEXT")).toMatchObject({ type: "watchlist", symbols: ["STOP", "NEXT"] });
+  });
+});
+
+// ---- favorites ---------------------------------------------------------------
+
+describe("parseCommand – favorite", () => {
+  it.each([
+    ["favorite bitcoin", "BTC"],
+    ["favourite solana", "SOL"],
+    ["star ETH", "ETH"],
+    ["pin dogecoin", "DOGE"],
+    ["add amazon to favorites", "AMZN"],
+  ])("%s → pin %s", (text, symbol) => {
+    expect(parseCommand(text)).toEqual({ type: "favorite", symbol, on: true });
+  });
+
+  it.each([
+    ["unfavorite bitcoin", "BTC"],
+    ["unstar eth", "ETH"],
+    ["unpin hype", "HYPE"],
+    ["remove xrp from favorites", "XRP"],
+  ])("%s → unpin %s", (text, symbol) => {
+    expect(parseCommand(text)).toEqual({ type: "favorite", symbol, on: false });
+  });
+
+  it("needs a known symbol", () => {
+    expect(parseCommand("favorite foobar")).toBeNull();
+  });
+
+  it("leaves start, ping alerts and plain selects alone", () => {
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("ping me if bitcoin drops 5%")).toMatchObject({ type: "alert" });
+    expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
   });
 });

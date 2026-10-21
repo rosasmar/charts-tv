@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Always-on TV screen: pure black (kind to OLED and burn-in), light text. */
+/* Always-on TV screen: pure black by default (kind to OLED and burn-in),
+   light text. */
 :root {
   --background: #000000;
   --foreground: #f5f5f5;
@@ -9,6 +10,58 @@
   --panel-border: rgba(255, 255, 255, 0.08);
   --up: #22c55e;
   --down: #ef4444;
+  /* Focus ring, selection bar and countdown bar. */
+  --highlight: #ffffff;
+  --chart-grid: rgba(255, 255, 255, 0.07);
+  /* Text on the chart's green or red live-price tag. */
+  --price-tag-text: #000000;
+  --alert-info: #111111;
+  --alert-info-glow: rgba(255, 255, 255, 0.4);
+  --alert-up: #06210f;
+  --alert-down: #2a0808;
+  --qr-modules: #ffffff;
+  --qr-background: #000000;
+  /* Behind the header when a background photo is set (RGB channels). */
+  --scrim: 0 0 0;
+}
+
+/* Light theme for bright rooms, picked from the phone (or "auto" by day).
+   Off-white rather than pure white to keep the glare down, cards a shade
+   lighter than the page, and greens and reds dark enough to keep their
+   contrast on a light background. */
+:root[data-theme="light"] {
+  --background: #e4e2dc;
+  --foreground: #16181b;
+  --muted: #5d6066;
+  --panel: #f3f1ec;
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --up: #117536;
+  --down: #b91c1c;
+  --highlight: #16181b;
+  --chart-grid: rgba(0, 0, 0, 0.1);
+  --price-tag-text: #ffffff;
+  --alert-info: #f3f1ec;
+  --alert-info-glow: rgba(0, 0, 0, 0.3);
+  --alert-up: #dcf1e2;
+  --alert-down: #f9e0de;
+  --qr-modules: #16181b;
+  --qr-background: #e4e2dc;
+  --scrim: 228 226 220;
+}
+
+/* With a background photo (set from the phone), panels turn translucent so it
+   shows through. They get denser as the photo gets stronger, so behind text
+   it never shows at more than ~16% and text stays readable from 10 ft. No
+   backdrop blur: it's too expensive on Fire TV GPUs. */
+:root[data-background] {
+  --panel: rgb(0 0 0 / calc(0.5 + 0.4 * var(--background-opacity, 0.35)));
+  --panel-border: rgba(255, 255, 255, 0.14);
+}
+
+/* The same in the light theme: translucent off-white panels under dark text. */
+:root[data-theme="light"][data-background] {
+  --panel: rgb(243 241 236 / calc(0.55 + 0.4 * var(--background-opacity, 0.35)));
+  --panel-border: rgba(0, 0, 0, 0.12);
 }
 
 @theme inline {
@@ -19,6 +72,10 @@
   --color-panel-border: var(--panel-border);
   --color-up: var(--up);
   --color-down: var(--down);
+  --color-highlight: var(--highlight);
+  --color-alert-info: var(--alert-info);
+  --color-alert-up: var(--alert-up);
+  --color-alert-down: var(--alert-down);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -34,6 +91,17 @@ body {
   color: var(--foreground);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The phone remote (/remote/[code]) is an ordinary mobile page, not a TV
+   screen: normal 16px rem instead of 1/120 of a ~390px phone (about 3px), and
+   a page that scrolls. */
+html:has([data-phone-remote]) {
+  font-size: 16px;
+}
+
+html:has([data-phone-remote]) body {
+  overflow: auto;
 }
 
 /* Countdown bar for the chart panel's auto-rotation. */
@@ -97,4 +165,15 @@ body {
 
 .chart-fade-in {
   animation: chart-fade-in 500ms ease-out both;
+}
+
+/* The QR code's SVG comes from the qrcode package with fixed colors (a filled
+   background path and a stroked modules path); CSS beats SVG presentation
+   attributes, so these recolor it for the theme. */
+.qr-code path[fill] {
+  fill: var(--qr-background);
+}
+
+.qr-code path[stroke] {
+  stroke: var(--qr-modules);
 }

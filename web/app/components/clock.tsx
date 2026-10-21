@@ -24,7 +24,11 @@ export function Clock() {
     <div className="leading-none">
       <div className="text-[7rem] font-extralight tracking-tight tabular-nums">
         {now
-          ? now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          ? now.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
           : " "}
       </div>
       <div className="mt-3 text-[2rem] font-light text-muted">

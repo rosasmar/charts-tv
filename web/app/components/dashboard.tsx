@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { CandleChart } from "@/app/components/candle-chart";
-import { Watchlist } from "@/app/components/watchlist";
+import { STAR_PATH, Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
@@ -18,10 +18,24 @@ import { useCandles } from "@/app/lib/use-candles";
 import { setCandleInterval, useCandleInterval } from "@/app/lib/use-candle-interval";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
-import { formatChange, formatPrice } from "@/app/lib/watchlist";
+import { resolveSource, tradesAroundTheClock } from "@/app/lib/market";
+import {
+  setFavorites,
+  setWatchlistSymbols,
+  useFavorites,
+  useWatchlistSymbols,
+} from "@/app/lib/use-watchlist-symbols";
+import { formatChange, formatPrice, pinFavorites } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
+import {
+  clearBackground,
+  loadRemoteBackground,
+  setBackgroundOpacity,
+} from "@/app/lib/use-background";
 import { usePairing } from "@/app/lib/use-pairing-code";
+import { setThemeSetting } from "@/app/lib/use-theme";
+import { THEME_LABELS, type ThemeSetting } from "@/app/lib/theme";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 import type { RemoteCommand } from "@/app/lib/remote-commands";
 
@@ -29,12 +43,12 @@ import type { RemoteCommand } from "@/app/lib/remote-commands";
 const ROTATE_MS = 10_000;
 /** Remote use pauses rotation; it resumes after this much idle time. */
 const RESUME_AFTER_MS = 30_000;
-/** The white focus ring fades out this long after the last remote press. */
+/** The focus ring fades out this long after the last remote press. */
 const RING_MS = 4_000;
-/** How long the on-screen badge for a media command stays up. */
+/** How long the on-screen badge for a media or theme command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous" | "candles";
+type BadgeIcon = "play" | "pause" | "next" | "previous" | "list" | "star" | "candles" | ThemeSetting;
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -52,8 +66,13 @@ export function Dashboard({
   /** R9: hide QR block when Redis isn't configured. */
   remoteAvailable?: boolean;
 }) {
-  const liveItems = useLiveMarket(sourceItems);
-  const { items, rules: demoRules } = useDemoPrices(liveItems);
+  // The viewer's own list from the phone, or null for the default board.
+  const symbols = useWatchlistSymbols();
+  const favorites = useFavorites();
+  const liveItems = useLiveMarket(sourceItems, symbols);
+  const { items: unpinned, rules: demoRules } = useDemoPrices(liveItems);
+  // Favorites sit at the top of the board; everything below works on this order.
+  const items = useMemo(() => pinFavorites(unpinned, favorites), [unpinned, favorites]);
 
   // R12 – remote-added alert rules accumulate here.
   const [remoteAlertRules, setRemoteAlertRules] = useState<AlertRule[]>([]);
@@ -69,7 +88,7 @@ export function Dashboard({
   const { alert, push: pushAlert } = usePriceAlerts(items, alertRules);
   // 30-minute or 1-minute candles, set from the phone and saved on the TV.
   const candleInterval = useCandleInterval();
-  const candles = useCandles(candleInterval);
+  const candles = useCandles(symbols, candleInterval);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);
@@ -185,6 +204,27 @@ export function Dashboard({
           }
           break;
         }
+        case "watchlist":
+          setWatchlistSymbols(cmd.symbols);
+          setFavorites(cmd.favorites);
+          setSelectedIndex(0);
+          setFocusedIndex(0);
+          showBadge("list", `${cmd.symbols.length} on the board`);
+          break;
+        case "favorite": {
+          const next = cmd.on
+            ? [...new Set([...favorites, cmd.symbol])]
+            : favorites.filter((s) => s !== cmd.symbol);
+          setFavorites(next);
+          // Pinning reorders the board; keep the same symbols selected and focused.
+          const reordered = pinFavorites(unpinned, next);
+          const indexOf = (symbol?: string) =>
+            Math.max(0, reordered.findIndex((i) => i.symbol === symbol));
+          setSelectedIndex(indexOf(items[selectedIndex]?.symbol));
+          setFocusedIndex(indexOf(items[focusedIndex]?.symbol));
+          showBadge("star", `${cmd.symbol} ${cmd.on ? "pinned" : "unpinned"}`);
+          break;
+        }
         case "next":
           step(1);
           break;
@@ -200,6 +240,9 @@ export function Dashboard({
         case "candles":
           setCandleInterval(cmd.interval);
           showBadge("candles", cmd.interval === "1m" ? "1-min candles" : "30-min candles");
+        case "theme":
+          setThemeSetting(cmd.theme);
+          showBadge(cmd.theme, THEME_LABELS[cmd.theme]);
           break;
         case "alert":
         case "priceAlert": {
@@ -233,6 +276,15 @@ export function Dashboard({
           });
           break;
         }
+        case "background":
+          if (pairing) loadRemoteBackground(pairing.code);
+          break;
+        case "backgroundOpacity":
+          setBackgroundOpacity(cmd.pct);
+          break;
+        case "clearBackground":
+          clearBackground();
+          break;
       }
   };
 
@@ -246,7 +298,7 @@ export function Dashboard({
   // such as timeframes.
 
   // Stocks only trade ~6.5 hours a day, so their windows count trading time.
-  const stock = selected?.symbol === "AMZN";
+  const stock = !!selected && !tradesAroundTheClock(resolveSource(selected.symbol));
   const caption =
     candleInterval === "1m"
       ? `1-min candles · ${stock ? "last trading hour" : "last hour"}`
@@ -284,12 +336,12 @@ export function Dashboard({
           caption={caption}
           slots={candleInterval === "1m" ? MINUTE_CANDLES : undefined}
         />
-        <WhatsMovingPanel />
+        <WhatsMovingPanel symbols={symbols} />
         {badge && (
           <div
             key={badge.id}
             role="status"
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-white/15 bg-black/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight"
+            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-highlight/15 bg-background/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight"
           >
             <BadgeGlyph icon={badge.icon} />
             {badge.text}
@@ -300,7 +352,7 @@ export function Dashboard({
             // Restart the countdown bar each time the symbol changes.
             key={`${selectedIndex}-${held}`}
             aria-hidden
-            className="rotate-progress absolute inset-x-0 bottom-0 h-[0.25rem] bg-white/40"
+            className="rotate-progress absolute inset-x-0 bottom-0 h-[0.25rem] bg-highlight/40"
             style={{ animationDuration: `${ROTATE_MS}ms` }}
           />
         )}
@@ -308,6 +360,7 @@ export function Dashboard({
 
       <Watchlist
         items={items}
+        favorites={favorites}
         focusedIndex={focusedIndex}
         selectedSymbol={selected?.symbol ?? ""}
         navigating={ringVisible}
@@ -348,6 +401,33 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
         <rect x="14" y="9" width="8" height="8" rx="1.5" />
       </>
     ),
+    // Sun, moon, and a half-filled circle for auto.
+    light: (
+      <>
+        <circle cx="12" cy="12" r="4.5" />
+        <path
+          d="M12 1.5V4M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.75 1.75M17.65 17.65l1.75 1.75M4.6 19.4l1.75-1.75M17.65 6.35l1.75-1.75"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+    dark: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+    auto: (
+      <>
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 3a9 9 0 0 0 0 18z" />
+      </>
+    ),
+    list: (
+      <>
+        <rect x="3" y="4" width="18" height="4" rx="1" />
+        <rect x="3" y="10" width="18" height="4" rx="1" />
+        <rect x="3" y="16" width="18" height="4" rx="1" />
+      </>
+    ),
+    star: <path d={STAR_PATH} />,
   };
   return (
     <svg

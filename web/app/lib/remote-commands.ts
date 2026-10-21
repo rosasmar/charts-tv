@@ -1,5 +1,6 @@
 import type { CandleInterval } from "./candles";
-import { WATCHLIST_SOURCES } from "./market";
+import { MAX_WATCHLIST, WATCHLIST_SOURCES, isValidSymbol } from "./market";
+import type { ThemeSetting } from "./theme";
 
 export type RemoteCommand =
   | { type: "select"; symbol: string }
@@ -7,10 +8,20 @@ export type RemoteCommand =
   | { type: "previous" }
   | { type: "pause" }
   | { type: "play" }
+  | { type: "theme"; theme: ThemeSetting }
   /** A percentage move alert; without a direction it fires either way. */
   | { type: "alert"; symbol: string; direction?: "up" | "down"; pct: number }
   /** A price-level alert; without a direction ("hits") the TV picks it from the current price. */
   | { type: "priceAlert"; symbol: string; price: number; direction?: "above" | "below" }
+  /** A background photo is waiting for the TV. Only the upload route sends it; it's never parsed from text. */
+  | { type: "background" }
+  /** How strongly the background photo shows, 0–100. */
+  | { type: "backgroundOpacity"; pct: number }
+  | { type: "clearBackground" }
+  /** The viewer's own board, in order; "*" marks favorites: "watchlist *BTC AMZN NVDA". */
+  | { type: "watchlist"; symbols: string[]; favorites: string[] }
+  /** Pin a symbol to the top of the board, or unpin it. */
+  | { type: "favorite"; symbol: string; on: boolean }
   /** Switches the chart between 30-minute and 1-minute candles. */
   | { type: "candles"; interval: CandleInterval };
 
@@ -27,11 +38,16 @@ const ALIASES: Record<string, string> = {
   ripple: "XRP",
   dogecoin: "DOGE",
   doge: "DOGE",
+  hyperliquid: "HYPE",
+  hype: "HYPE",
   amazon: "AMZN",
   amzn: "AMZN",
   "amazon stock": "AMZN",
 };
 
+// TODO: Symbols picked on the phone (e.g. NVDA) aren't in this map, so
+// "show nvda" or "alert me if nvda drops 5%" isn't understood yet. The parser
+// would need the TV's list, or to accept any ticker after "show".
 /** Build lookup: lowercase ticker and name → uppercase symbol. */
 function buildSymbolMap(): Map<string, string> {
   const map = new Map<string, string>();
@@ -118,6 +134,60 @@ function parseAlert(norm: string): RemoteCommand | null {
   return { type: "priceAlert", symbol, price: value, direction };
 }
 
+const THEME_RE = /\b(light|day|dark|night|auto(?:matic)?)\s+(?:mode|theme)\b/;
+
+/**
+ * "light mode" / "day mode" → light, "dark mode" / "night mode" → dark,
+ * "auto mode" / "auto theme" → auto. "turn off dark mode" means light.
+ */
+function parseTheme(norm: string): RemoteCommand | null {
+  const match = norm.match(THEME_RE);
+  if (!match) return null;
+  const word = match[1];
+  const theme: ThemeSetting =
+    word === "light" || word === "day" ? "light" : word === "dark" || word === "night" ? "dark" : "auto";
+  if (!/\b(?:off|disable)\b/.test(norm)) return { type: "theme", theme };
+  if (theme === "auto") return null; // "auto mode off" doesn't say which theme.
+  return { type: "theme", theme: theme === "light" ? "dark" : "light" };
+}
+
+/** "background opacity 40%" → opacity; "remove background" → clear. */
+function parseBackground(norm: string): RemoteCommand | null {
+  if (/\bopacity\b/.test(norm)) {
+    const match = norm.match(/(-?\d+(?:\.\d+)?)\s*(?:%|percent)?/);
+    if (!match) return null;
+    const pct = Math.round(parseFloat(match[1]));
+    return pct >= 0 && pct <= 100 ? { type: "backgroundOpacity", pct } : null;
+  }
+  if (/\b(?:remove|clear|delete)\b/.test(norm)) return { type: "clearBackground" };
+  return null;
+}
+
+// "*AMZN NVDA, bitcoin" → symbols ["AMZN", "NVDA", "BTC"], favorites
+// ["AMZN"]. Names and aliases map to their ticker; anything else must look
+// like a ticker. Null if any word doesn't, or the list is empty or longer
+// than MAX_WATCHLIST.
+function parseWatchlist(rest: string): RemoteCommand | null {
+  const words = rest.split(/[\s,]+/).filter(Boolean);
+  const favorites = new Set<string>();
+  const symbols = [
+    ...new Set(
+      words.map((word) => {
+        const bare = word.replace(/^\*/, "");
+        const symbol = SYMBOL_MAP.get(bare.toLowerCase()) ?? bare.toUpperCase();
+        if (bare !== word) favorites.add(symbol);
+        return symbol;
+      }),
+    ),
+  ];
+  if (!symbols.length || symbols.length > MAX_WATCHLIST) return null;
+  if (!symbols.every(isValidSymbol)) return null;
+  return { type: "watchlist", symbols, favorites: [...favorites] };
+}
+
+const UNFAVORITE = /\b(?:unfavou?rite|unstar|unpin)\b|\bremove\b.*\bfavou?rites?\b/;
+const FAVORITE = /\b(?:favou?rites?|star|pin)\b/;
+
 /**
  * Pure function: turns free text into a RemoteCommand or null.
  * R3 / R4 – case insensitive, filler words ignored.
@@ -125,12 +195,30 @@ function parseAlert(norm: string): RemoteCommand | null {
 export function parseCommand(text: string): RemoteCommand | null {
   if (!text || text.length > 200) return null;
 
+  // --- "watchlist …", which the phone's picker sends. Read from the raw text:
+  // filler words such as "a" and "it" are also tickers. ---
+  const listMatch = text.match(/^\s*watchlist\b[\s:]*(.*)$/i);
+  if (listMatch) return parseWatchlist(listMatch[1]);
+
   const norm = normalise(text);
 
   // --- alerts come first: phrases like "falls back to 100" or "stops at
   // 80k" must not be read as navigation commands. ---
   if (ALERT_VERB.test(norm)) return parseAlert(norm);
 
+  // --- theme, before play and select: "start dark mode" and "switch to
+  // light mode" are about the theme. ---
+  if (THEME_RE.test(norm)) return parseTheme(norm);
+  // --- background photo: anything about the background stops here, so
+  // e.g. "stop background" can't fall through to pause. ---
+  if (/\bbackground\b/.test(norm)) return parseBackground(norm);
+  // --- "favorite bitcoin" / "unpin btc": checked before select, which would
+  // otherwise read the bare name as "show bitcoin". ---
+  const on = !UNFAVORITE.test(norm);
+  if (!on || FAVORITE.test(norm)) {
+    const symbol = extractSymbol(norm);
+    return symbol ? { type: "favorite", symbol, on } : null;
+  }
   // --- candle interval: before select, so "show 1 minute candles" isn't
   // read as an unknown symbol. ---
   const candlesMatch = norm.match(CANDLES_RE);

@@ -9,7 +9,9 @@ const DIM_OPACITY = 0.55;
 // Night dim for an always-on TV: from 22:00 to 07:00 local time a black layer
 // fades in over the layout. An overlay is far cheaper on TV hardware than a
 // CSS filter. Price alerts sit above it (z-50 vs z-40), so they still pop at
-// full brightness. ?dim=on / ?dim=off override the schedule.
+// full brightness. ?dim=on / ?dim=off override the schedule. It overhangs the
+// screen by 1rem, like the background photo, so the burn-in drift never
+// leaves an undimmed strip of photo at an edge.
 export function NightDim() {
   const [dimmed, setDimmed] = useState(false);
 
@@ -26,7 +28,7 @@ export function NightDim() {
     <div
       aria-hidden
       data-dimmed={dimmed}
-      className="pointer-events-none fixed inset-0 z-40 bg-black transition-opacity duration-[2000ms]"
+      className="pointer-events-none fixed -inset-[1rem] z-40 bg-black transition-opacity duration-[2000ms]"
       style={{ opacity: dimmed ? DIM_OPACITY : 0 }}
     />
   );

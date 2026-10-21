@@ -23,8 +23,6 @@ export function summarizeFromPrices(items: WatchlistItem[]): WhatsMoving {
     return { headline: "Waiting for prices", points: [], source: "prices" };
   }
 
-  const up = items.filter((i) => i.change24h >= FLAT_PCT).length;
-  const down = items.filter((i) => i.change24h <= -FLAT_PCT).length;
   const headline =
     top.change24h >= FLAT_PCT && bottom.change24h <= -FLAT_PCT
       ? `${top.symbol} leads, ${bottom.symbol} lags`
@@ -37,7 +35,6 @@ export function summarizeFromPrices(items: WatchlistItem[]): WhatsMoving {
   const points = [
     `${top.symbol} ${formatChange(top.change24h)} at ${formatPrice(top.price)}`,
     `${bottom.symbol} ${formatChange(bottom.change24h)} at ${formatPrice(bottom.price)}`,
-    `${up} up, ${down} down, ${items.length - up - down} flat`,
   ];
   return { headline, points: top === bottom ? points.slice(0, 1) : points, source: "prices" };
 }
