@@ -74,7 +74,8 @@ export function Watchlist({ items, focusedIndex, selectedSymbol, navigating }: P
           style={{
             height: highlight.height,
             transform: `translateY(${highlight.top}px) scale(1.03)`,
-            boxShadow: `0 0 2.5rem -0.5rem ${glow}`,
+            // The ring itself glows too in the neon theme.
+            boxShadow: `0 0 2.5rem -0.5rem ${glow}${navigating ? ", var(--ring-glow)" : ""}`,
           }}
         />
       )}
@@ -91,7 +92,7 @@ function WatchlistTile({
 }) {
   const up = item.change24h >= 0;
   return (
-    <div className="relative flex h-full items-center justify-between rounded-[1.5rem] border border-panel-border bg-panel px-[2rem]">
+    <div className="relative flex h-full items-center justify-between rounded-[1.5rem] border border-panel-border bg-panel px-[2rem] [box-shadow:var(--panel-glow)]">
       {selected && (
         <div
           aria-hidden

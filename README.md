@@ -13,7 +13,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Always-on layout** | Pure black screen (or a light theme, see below) with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
 | **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
-| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "neon lights", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
@@ -21,7 +21,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
-| **Light mode** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast. Pick Dark (the default), Light or Auto (light by day, dark from 22:00 to 07:00) with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode" or "auto mode". The TV remembers the choice across reloads. |
+| **Light mode + neon lights** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast, and a just-for-fun neon theme: deep purple with glowing cyan panels, a magenta focus ring, electric green and hot pink. Pick Dark (the default), Light, Auto (light by day, dark from 22:00 to 07:00) or Neon with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode", "auto mode" or "neon lights". The TV remembers the choice across reloads. |
 | **Burn-in protection** | The whole layout drifts 6 px to a new position every 2 minutes, cycling through 9 positions. |
 
 ### Remote controls
@@ -80,7 +80,7 @@ Useful URL flags:
 | `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 15 s, and DOGE drops through a level 3% below at 30 s |
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
-| `?theme=light` / `?theme=dark` / `?theme=auto` | Use this theme for the page load, over the one saved from the phone |
+| `?theme=light` / `?theme=dark` / `?theme=auto` / `?theme=neon` | Use this theme for the page load, over the one saved from the phone |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
 | `?news=amazon` | Only About Amazon headlines in the ticker |
 

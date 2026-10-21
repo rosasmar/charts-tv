@@ -58,7 +58,7 @@ export function NewsTicker() {
   return (
     <footer
       aria-label="News"
-      className="relative flex h-[4.5rem] items-center overflow-hidden rounded-[1.25rem] border border-panel-border bg-panel text-[1.75rem]"
+      className="relative flex h-[4.5rem] items-center overflow-hidden rounded-[1.25rem] border border-panel-border bg-panel text-[1.75rem] [box-shadow:var(--panel-glow)]"
     >
       <div className="z-10 flex h-full shrink-0 items-center bg-panel pl-[2rem] pr-[1.5rem] text-[1.25rem] font-semibold uppercase tracking-[0.2em] text-muted">
         News

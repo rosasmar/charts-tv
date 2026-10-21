@@ -21,6 +21,11 @@
   --alert-down: #2a0808;
   --qr-modules: #ffffff;
   --qr-background: #000000;
+  /* Glows, only lit in the neon theme. The ring glow sits in a shadow list,
+     so its "off" value is an empty shadow rather than none. */
+  --panel-glow: none;
+  --badge-glow: none;
+  --ring-glow: 0 0 #0000;
 }
 
 /* Light theme for bright rooms, picked from the phone (or "auto" by day).
@@ -44,6 +49,33 @@
   --alert-down: #f9e0de;
   --qr-modules: #16181b;
   --qr-background: #e4e2dc;
+}
+
+/* Neon lights: deep purple-navy, panels edged in glowing cyan, a magenta
+   focus ring, electric green and hot pink for up and down. Glows are static
+   box-shadows (no filters or backdrop blur), and numbers get no text-shadow
+   so prices stay crisp from across the room. */
+:root[data-theme="neon"] {
+  --background: #0a0619;
+  --foreground: #f4f1ff;
+  --muted: #a49bd0;
+  --panel: #120a2a;
+  --panel-border: rgba(45, 226, 255, 0.55);
+  --up: #39ff88;
+  --down: #ff4d7d;
+  --highlight: #ff4fd8;
+  --chart-grid: rgba(45, 226, 255, 0.13);
+  --price-tag-text: #0a0619;
+  --alert-info: #160c35;
+  --alert-info-glow: #ff4fd8;
+  --alert-up: #04261a;
+  --alert-down: #2b0618;
+  /* A solid color on a solid background, so the code still scans. */
+  --qr-modules: #2de2ff;
+  --qr-background: #0a0619;
+  --panel-glow: 0 0 1rem rgba(45, 226, 255, 0.45), inset 0 0 1rem rgba(45, 226, 255, 0.12);
+  --badge-glow: 0 0 2rem -0.25rem rgba(255, 79, 216, 0.6);
+  --ring-glow: 0 0 1.25rem rgba(255, 79, 216, 0.7);
 }
 
 @theme inline {
@@ -147,4 +179,37 @@ body {
 
 .qr-code path[stroke] {
   stroke: var(--qr-modules);
+}
+
+/* Neon: the wordmark glows like a sign and flickers on once when the theme
+   switches on. Only opacity animates, on one small element, and only once. */
+:root[data-theme="neon"] .wordmark {
+  color: #ffe6fb;
+  text-shadow:
+    0 0 0.15rem #ff8ae6,
+    0 0 0.75rem #ff4fd8,
+    0 0 1.75rem rgba(255, 79, 216, 0.6);
+  animation: neon-flicker 1.4s steps(1, end);
+}
+
+@keyframes neon-flicker {
+  0% {
+    opacity: 0.15;
+  }
+  12% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.3;
+  }
+  26% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.55;
+  }
+  54%,
+  100% {
+    opacity: 1;
+  }
 }
