@@ -14,10 +14,10 @@ import {
   WebViewNavigationEvent,
 } from '@amazon-devices/webview/dist/types/WebViewTypes';
 
-// TODO: Replace with the permanent Vercel URL once web/ is deployed from the
-// team's Vercel project (this is an unclaimed temporary deployment of main).
+// The production deployment of web/ on Vercel. Append URL flags such as
+// ?demo=1 or ?news=amazon for recordings (see the main README).
 // For D-pad debugging, use 'file:///pkg/assets/keytest.html' instead.
-const APP_URL = 'https://web-nine-gray-63.vercel.app';
+const APP_URL = 'https://tickertv.vercel.app';
 
 // The page's own console output doesn't reach the device log, so forward it
 // (and uncaught errors) to this wrapper, which logs it with a [web] prefix.
