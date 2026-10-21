@@ -12,9 +12,11 @@ This file answers Devpost's product-feedback questions for each Amazon tool, API
 | **Kepler/Vega Turbo Modules** (IDL template, `com.amazon.kepler.user_engagement`) | An experiment to keep the screen awake (kept on a branch) |
 | **Amazon Bedrock** (Claude via `AnthropicBedrockMantle`) | The "What's moving" market summary |
 | **AWS CLI** (`aws login`, `bedrock`, `service-quotas`) | Account and model-access diagnostics and authentication |
+| **Kiro Crew + Kiro CLI** (CLI 2.33) | Implementing the phone companion from our spec |
 
 ## AWS services used (AWS Builder mini-challenge)
 
+- **Kiro Crew** (development tool). We wrote a spec, [`docs/specs/phone-companion.md`](specs/phone-companion.md), and Kiro Crew, running locally with Kiro CLI as its agent, implemented the phone companion end to end on a branch: the command parser, pairing codes, the Upstash Redis relay and API, adaptive polling, the dashboard wiring and the phone page, with 104 tests. We reviewed its commit, fixed the runtime issues we found, and verified it with a real phone and the Vega Virtual Device. The README has a "Built with Kiro Crew" section, and PR #8 lists which commit came from Crew.
 - **Amazon Bedrock.** The `/api/whats-moving` route calls Claude on Bedrock through Anthropic's `AnthropicBedrockMantle` client, the Messages API on the bedrock-mantle endpoint. It uses **structured output**, a zod schema of `{ headline, points[] }`, at `effort: "low"`.
   - The prompt contains only the current watchlist and the cached headlines.
   - The system prompt forbids outside knowledge, advice and invented causes for moves.
@@ -87,3 +89,21 @@ Rough times, not measured precisely:
 **Onboarding:** we signed up, upgraded and signed the CLI in on the same afternoon. We have still not made a successful Claude call from our own account; there's an open support case. The app falls back gracefully meanwhile.
 
 **Would we build with it again?** **Yes, for the API.** The Mantle endpoint is excellent. We'd advise teams to set up and verify their AWS account days ahead, and we'd ask AWS to let new paid accounts submit the Anthropic use-case form and start with a non-zero quota.
+
+## Kiro Crew + Kiro CLI
+
+**What we used it for:** implementing the phone companion (QR pairing, a phone remote with text and voice, and a Redis relay to the TV) from a written spec.
+
+**What worked well**
+- **Setup:** the dashboard, the gateway and Kiro CLI sign-in with GitHub. Once the CLI was installed, Crew picked it up automatically.
+- **Spec to working code:** from our spec, Crew produced a complete, well-structured feature in one run. It followed the requirements closely (R1–R15), wrote 104 unit tests, and kept lint, tests and the build green.
+- **It respected the repo's conventions:** it worked on a branch, didn't push to `main`, wrote a plain commit message, and followed `AGENTS.md`.
+
+**What needs work**
+- **Installing Kiro CLI on macOS failed partway.** It hit `Operation not permitted` copying into `/Applications` and left a half-installed bundle behind [#19].
+- **Green tests didn't mean working code.** Crew's unit tests never touched the real Redis client, so a library behavior (`@upstash/redis` auto-parses JSON) broke the feature at runtime: the TV never received commands. Review also found ID reuse after trimming, a reused `Response`, and stale React state [#20].
+- **Crew left local folders** (`.kiro/settings/`, `_bg/`) untracked in the repo root [#21].
+
+**Onboarding:** roughly an hour from download to a running task, most of it the Kiro CLI install issue.
+
+**Would we build with it again?** **Yes,** for well-specified, self-contained features. Our advice: always add an integration step against real services, plus a human or second-agent review, before merging.
