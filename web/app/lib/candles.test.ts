@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  timeTicks,
   layoutCandles,
   parseCoinGeckoOhlc,
   parseKrakenOhlc,
@@ -166,5 +167,31 @@ describe("layoutCandles", () => {
   it("keeps a visible body for a doji (open = close)", () => {
     const { shapes } = layoutCandles([{ t: 1, o: 10, h: 11, l: 9, c: 10 }], 100, 100);
     expect(shapes[0].bodyHeight).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("timeTicks", () => {
+  const at = (day: number, hour: number, minute: number) => new Date(2026, 9, day, hour, minute).getTime();
+  const series = (start: number, count: number, stepMinutes: number) =>
+    Array.from({ length: count }, (_, i) => ({ t: start + i * stepMinutes * 60_000, o: 1, h: 1, l: 1, c: 1 }));
+
+  it("labels a 24-hour chart of 30-minute candles every 4 hours", () => {
+    const ticks = timeTicks(series(at(20, 23, 30), 48, 30));
+    expect(ticks.map((t) => t.label)).toEqual(["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]);
+    expect(ticks[0].index).toBe(1);
+  });
+
+  it("labels an hour of 1-minute candles every 10 minutes", () => {
+    const ticks = timeTicks(series(at(21, 14, 3), 60, 1));
+    expect(ticks.map((t) => t.label)).toEqual(["14:10", "14:20", "14:30", "14:40", "14:50", "15:00"]);
+  });
+
+  it("labels a multi-day chart with the weekday each day starts", () => {
+    const days = [19, 20, 21].flatMap((day) => series(at(day, 9, 30), 13, 30));
+    expect(timeTicks(days).map((t) => t.label)).toEqual(["Tue", "Wed"]);
+  });
+
+  it("returns nothing for fewer than two candles", () => {
+    expect(timeTicks(series(at(21, 9, 0), 1, 30))).toEqual([]);
   });
 });

@@ -158,3 +158,49 @@ export function layoutCandles(
   });
   return { shapes, min, max, y };
 }
+
+export type TimeTick = { index: number; label: string };
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const TICK_STEPS = [5, 10, 15, 30, 60, 120, 180, 240, 360].map((m) => m * MINUTE);
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// Labels under the chart, in the TV's local time, at most `maxLabels`. Charts
+// that span days (a stock's 5 trading days) are labelled at the first candle
+// of each day ("Mon"); shorter ones on round clock times ("14:00", "14:30"),
+// with the smallest step that keeps the labels from crowding.
+export function timeTicks(candles: Candle[], maxLabels = 6): TimeTick[] {
+  if (candles.length < 2) return [];
+  const span = candles[candles.length - 1].t - candles[0].t;
+
+  if (span > 36 * HOUR) {
+    const ticks: TimeTick[] = [];
+    candles.forEach((candle, index) => {
+      const day = new Date(candle.t).toDateString();
+      if (index > 0 && day !== new Date(candles[index - 1].t).toDateString()) {
+        ticks.push({ index, label: WEEKDAYS[new Date(candle.t).getDay()] });
+      }
+    });
+    return ticks.slice(-maxLabels);
+  }
+
+  // Local minutes since midnight, so steps line up with the TV's clock.
+  const localMinutes = (t: number) => {
+    const d = new Date(t);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+  for (const step of TICK_STEPS) {
+    const stepMinutes = step / MINUTE;
+    const ticks = candles.flatMap((candle, index) => {
+      const minutes = localMinutes(candle.t);
+      return minutes % stepMinutes === 0
+        ? [{ index, label: `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}` }]
+        : [];
+    });
+    if (ticks.length <= maxLabels) return ticks;
+  }
+  return [];
+}
