@@ -33,8 +33,8 @@ export function summarizeFromPrices(items: WatchlistItem[]): WhatsMoving {
           : "A quiet board";
 
   const points = [
-    `${top.symbol} ${formatChange(top.change24h)} at ${formatPrice(top.price)}`,
-    `${bottom.symbol} ${formatChange(bottom.change24h)} at ${formatPrice(bottom.price)}`,
+    `${top.symbol} ${formatChange(top.change24h)}`,
+    `${bottom.symbol} ${formatChange(bottom.change24h)}`,
   ];
   return { headline, points: top === bottom ? points.slice(0, 1) : points, source: "prices" };
 }
