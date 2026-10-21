@@ -8,15 +8,19 @@ const REFRESH_MS = 10 * 60_000;
 
 // "What's moving": a one-line market headline plus a few points, written by
 // Claude on Amazon Bedrock from the watchlist and the latest headlines (or a
-// plain price summary when Claude isn't available).
-export function WhatsMovingPanel() {
+// plain price summary when Claude isn't available). It covers the picked list
+// in `symbols`, or the default board.
+export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
   const [summary, setSummary] = useState<WhatsMoving>();
+  const url = symbols
+    ? `/api/whats-moving/custom?symbols=${encodeURIComponent(symbols.join(","))}`
+    : "/api/whats-moving";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/api/whats-moving");
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: WhatsMoving = await res.json();
         if (!cancelled) setSummary(data);
@@ -30,7 +34,7 @@ export function WhatsMovingPanel() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [url]);
 
   if (!summary) return null;
   return (

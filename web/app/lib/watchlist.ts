@@ -15,7 +15,19 @@ export const MOCK_WATCHLIST: WatchlistItem[] = [
   { symbol: "SOL", name: "Solana", price: 187.32, change24h: 5.67 },
   { symbol: "XRP", name: "XRP", price: 2.41, change24h: 0.32 },
   { symbol: "DOGE", name: "Dogecoin", price: 0.2134, change24h: -3.05 },
+  { symbol: "HYPE", name: "Hyperliquid", price: 80.99, change24h: 1.27 },
 ];
+
+// Favorites first, each group keeping its own order. Used for the board and
+// for the phone's draft list, so both show the same order.
+export function pinFavorites<T extends { symbol: string }>(items: T[], favorites: string[]): T[] {
+  if (!favorites.length) return items;
+  const pinned = new Set(favorites);
+  return [
+    ...items.filter((i) => pinned.has(i.symbol)),
+    ...items.filter((i) => !pinned.has(i.symbol)),
+  ];
+}
 
 export function formatPrice(price: number): string {
   const digits = price >= 1000 ? 2 : price >= 1 ? 2 : 4;

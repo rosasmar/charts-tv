@@ -27,15 +27,16 @@ const client = new AnthropicBedrockMantle({
   awsRegion: process.env.AWS_REGION ?? "eu-north-1",
 });
 
-// Cached for 10 minutes and shared by every TV, so Bedrock sees about six
-// calls an hour no matter how many screens are on. Any failure — missing
+// Cached for 10 minutes per watchlist and shared by every TV showing it, so
+// Bedrock sees about six calls an hour per distinct list (just six for the
+// default board) no matter how many screens are on. Any failure — missing
 // credentials, no model access, an error, a refusal, unparseable output —
 // falls back to the plain price summary so the panel never breaks.
-export async function getWhatsMoving(): Promise<WhatsMoving> {
+export async function getWhatsMoving(symbols: string[] | null = null): Promise<WhatsMoving> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 600, expire: 3_600 });
 
-  const { items } = await getMarketData();
+  const { items } = await getMarketData(symbols);
   const fallback = summarizeFromPrices(items);
 
   try {

@@ -60,40 +60,44 @@ export function NewsTicker() {
       aria-label="News"
       className="relative flex h-[4.5rem] items-center overflow-hidden rounded-[1.25rem] border border-panel-border bg-panel text-[1.75rem]"
     >
-      <div className="z-10 flex h-full shrink-0 items-center bg-panel pl-[2rem] pr-[1.5rem] text-[1.25rem] font-semibold uppercase tracking-[0.2em] text-muted">
+      <div className="flex h-full shrink-0 items-center pl-[2rem] pr-[1.5rem] text-[1.25rem] font-semibold uppercase tracking-[0.2em] text-muted">
         News
       </div>
-      {headlines.length === 0 ? (
-        <div className="text-muted">
-          {failed ? "Headlines unavailable right now" : "Loading headlines…"}
-        </div>
-      ) : (
-        <div
-          className="ticker-track flex w-max whitespace-nowrap"
-          style={{ animationDuration: `${durationS}s` }}
-        >
-          {[0, 1].map((copy) => (
-            <div
-              key={copy}
-              ref={copy === 0 ? copyRef : undefined}
-              aria-hidden={copy === 1}
-              className="flex"
-            >
-              {headlines.map((headline) => (
-                <span key={headline.id} className="flex items-center">
-                  <span className="mr-[0.75rem] text-[1.25rem] font-semibold uppercase tracking-wider text-muted">
-                    {headline.source}
+      {/* Clipped here rather than masked by an opaque label, so the strip
+          can turn translucent over a background photo. */}
+      <div className="min-w-0 flex-1 overflow-hidden">
+        {headlines.length === 0 ? (
+          <div className="text-muted">
+            {failed ? "Headlines unavailable right now" : "Loading headlines…"}
+          </div>
+        ) : (
+          <div
+            className="ticker-track flex w-max whitespace-nowrap"
+            style={{ animationDuration: `${durationS}s` }}
+          >
+            {[0, 1].map((copy) => (
+              <div
+                key={copy}
+                ref={copy === 0 ? copyRef : undefined}
+                aria-hidden={copy === 1}
+                className="flex"
+              >
+                {headlines.map((headline) => (
+                  <span key={headline.id} className="flex items-center">
+                    <span className="mr-[0.75rem] text-[1.25rem] font-semibold uppercase tracking-wider text-muted">
+                      {headline.source}
+                    </span>
+                    <span>{headline.title}</span>
+                    <span aria-hidden className="mx-[2rem] text-muted">
+                      •
+                    </span>
                   </span>
-                  <span>{headline.title}</span>
-                  <span aria-hidden className="mx-[2rem] text-muted">
-                    •
-                  </span>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </footer>
   );
 }

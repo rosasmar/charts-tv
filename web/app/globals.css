@@ -46,6 +46,15 @@
   --qr-background: #e4e2dc;
 }
 
+/* With a background photo (set from the phone), panels turn translucent so it
+   shows through. They get denser as the photo gets stronger, so behind text
+   it never shows at more than ~16% and text stays readable from 10 ft. No
+   backdrop blur: it's too expensive on Fire TV GPUs. */
+:root[data-background] {
+  --panel: rgb(0 0 0 / calc(0.5 + 0.4 * var(--background-opacity, 0.35)));
+  --panel-border: rgba(255, 255, 255, 0.14);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -73,6 +82,17 @@ body {
   color: var(--foreground);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The phone remote (/remote/[code]) is an ordinary mobile page, not a TV
+   screen: normal 16px rem instead of 1/120 of a ~390px phone (about 3px), and
+   a page that scrolls. */
+html:has([data-phone-remote]) {
+  font-size: 16px;
+}
+
+html:has([data-phone-remote]) body {
+  overflow: auto;
 }
 
 /* Countdown bar for the chart panel's auto-rotation. */
