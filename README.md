@@ -13,6 +13,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
 | **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
@@ -101,15 +102,29 @@ vega run-app build/aarch64-debug/tickertv_aarch64.vpkg com.chartstv.tickertv.mai
 
 The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`, which is the production deployment at **https://tickertv.vercel.app**.
 
+### Phone companion (optional)
+
+The phone remote needs a small Redis store to pass commands from the phone to the TV. On Vercel, add **Upstash for Redis** from the Marketplace to the project. It sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`; plain `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` work too. Without them the QR code is hidden and everything else works. Commands expire after 1 hour, are rate-limited to 30 a minute per TV, and the TV polls every 5 s, or every 1 s for two minutes after a command.
+
+## Built with Kiro Crew
+
+The phone companion was implemented by **[Kiro Crew](https://kiro.dev/docs/crew/)**, AWS's autonomous agent workspace for Kiro, running locally with Kiro CLI:
+
+1. We wrote the spec, [`docs/specs/phone-companion.md`](docs/specs/phone-companion.md), with requirements, architecture, tests and acceptance criteria.
+2. Kiro Crew implemented it end to end on a branch: the command parser, pairing codes, the Redis relay and API, adaptive polling, the dashboard wiring and the phone page, with tests.
+3. We reviewed the result, fixed the issues we found (Redis auto-deserialization, id sequencing, and where the QR code sits), and verified it against a real Upstash Redis.
+
 ## Repository layout
 
 ```
 web/                 Next.js app (UI + API routes)
   app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, burn-in
   app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
-  app/api/           /api/market, /api/candles, /api/news, /api/whats-moving
+  app/api/           /api/market, /api/candles, /api/news, /api/whats-moving, /api/remote/[code]/commands
+  app/remote/        the phone remote page (/remote/[code])
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)
 docs/
+  specs/             feature specs (phone companion, built with Kiro Crew)
   friction-log.md    every snag we hit with the Vega SDK, the VVD and Bedrock
   feedback.md        product feedback for each tool and SDK we used
 ```
