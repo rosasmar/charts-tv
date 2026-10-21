@@ -32,6 +32,9 @@ These are the snags we hit while building TickerTV with the Amazon Vega SDK, the
 | 16 | Bedrock | All daily token quotas are 0, so even Nova is throttled | High |
 | 17 | Bedrock | Opus 5.5 listed ACTIVE but returns 404; neighboring models return 403 | Medium |
 | 18 | AWS CLI | Positive: `aws login` + SDK credential pickup | n/a |
+| 19 | Kiro CLI | Installer fails with "Operation not permitted" and leaves a half-installed app | Medium |
+| 20 | Kiro Crew | Agent-written feature passed its tests but failed at runtime against real Redis | Medium |
+| 21 | Kiro Crew | Crew leaves local settings folders in the repo root | Low |
 
 ---
 
@@ -208,3 +211,33 @@ These are the snags we hit while building TickerTV with the Amazon Vega SDK, the
 - **Actual:** The CLI signed in through the browser console session, and the Anthropic Bedrock SDK picked up the credentials automatically. It took about a minute. The CLI also offers to install AWS skills and an MCP server into coding agents; we declined, to keep access narrow.
 - **Note:** The SDK's refresh of `aws login` tokens needs `AWS_REGION` in the environment, or it fails with "Region is missing".
 - **Suggestion:** Feature `aws login` in the Bedrock getting-started docs.
+
+## Kiro Crew and Kiro CLI
+
+### 19. Kiro CLI installer fails with "Operation not permitted" (Medium)
+- **Task:** Install Kiro CLI, which Kiro Crew requires as its agent.
+- **Steps:** Ran `curl -fsSL https://cli.kiro.dev/install | bash` from a terminal on macOS 14.6.
+- **Expected:** `Kiro CLI.app` is installed in `/Applications`.
+- **Actual:** `ditto: /Applications/Kiro CLI.app/Contents/MacOS/kiro-cli-chat: Operation not permitted`, then "Installation failed. Cleaning up…". The cleanup left a partial app behind (two of the three binaries).
+- **Workaround:** Gave the terminal **App Management** permission (System Settings → Privacy & Security), deleted the partial bundle, and reran the installer.
+- **Suggestion:** Detect the missing App Management permission and explain how to grant it, or install to `~/Applications`, and make the cleanup actually remove the partial bundle.
+
+### 20. Agent-written feature passed its tests but failed at runtime (Medium)
+- **Task:** Have Kiro Crew implement the phone companion from our spec.
+- **Steps:** Gave Crew the spec and the repo rules, then ran the task. Crew committed the feature with 104 passing tests and a clean lint and build.
+- **Expected:** Working code, or at least code tested against the real Redis client it uses.
+- **Actual:**
+  - Every unit test mocked or avoided Redis, so a library behavior slipped through: `@upstash/redis` auto-parses JSON on reads, and the code called `JSON.parse` on objects. Every command was dropped, so the TV never reacted.
+  - Review also found command IDs taken from the list length, which repeated after trimming and raced between concurrent requests.
+  - A single shared `Response` object was reused for every 503.
+  - A `useCallback` captured stale state.
+- **Workaround:** Code review, fixes with tests (PR #8, commit `746066e`), and verification against real Upstash Redis and a real phone.
+- **Suggestion:** Have Crew run an integration check against real services when credentials are available, for example by deploying a preview and hitting the routes. Flag untested external-library behavior in its summary.
+
+### 21. Crew leaves local folders in the repo root (Low)
+- **Task:** Keep the repository clean after a Crew run.
+- **Steps:** Ran a Crew task on the repo, then checked `git status`.
+- **Expected:** Only intended changes, committed on the branch.
+- **Actual:** Untracked `.kiro/settings/` (CLI settings and a lock file) and `_bg/.kiro/settings/` appeared in the repo root.
+- **Workaround:** Added both to `.gitignore`.
+- **Suggestion:** Keep per-run settings outside the working tree, or add them to a repo-local ignore automatically.
