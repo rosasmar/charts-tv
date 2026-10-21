@@ -1,3 +1,4 @@
+import { BackgroundPhoto } from "@/app/components/background-photo";
 import { BurnInShift } from "@/app/components/burn-in-shift";
 import { Clock } from "@/app/components/clock";
 import { Dashboard } from "@/app/components/dashboard";
@@ -13,6 +14,8 @@ export default async function Home() {
   const remoteAvailable = isRedisAvailable();
   return (
     <BurnInShift className="grid h-screen grid-rows-[auto_1fr_auto] gap-[2rem] p-[3rem]">
+      <BackgroundPhoto />
+
       <header className="flex items-start justify-between">
         <Clock />
         <div className="flex items-start gap-[2.5rem]">

@@ -11,6 +11,15 @@
   --down: #ef4444;
 }
 
+/* With a background photo (set from the phone), panels turn translucent so it
+   shows through. They get denser as the photo gets stronger, so behind text
+   it never shows at more than ~16% and text stays readable from 10 ft. No
+   backdrop blur: it's too expensive on Fire TV GPUs. */
+:root[data-background] {
+  --panel: rgb(0 0 0 / calc(0.5 + 0.4 * var(--background-opacity, 0.35)));
+  --panel-border: rgba(255, 255, 255, 0.14);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

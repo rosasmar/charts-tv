@@ -243,3 +243,54 @@ describe("parseCommand – alert without a direction", () => {
     expect(parseCommand("alert me if bitcoin drops 5")).toMatchObject({ type: "alert", pct: 5, direction: "down" });
   });
 });
+
+describe("parseCommand – background", () => {
+  it("background opacity 40% → backgroundOpacity 40", () => {
+    expect(parseCommand("background opacity 40%")).toEqual({ type: "backgroundOpacity", pct: 40 });
+  });
+
+  it("works without the % sign, with 'percent' and with filler words", () => {
+    expect(parseCommand("background opacity 40")).toEqual({ type: "backgroundOpacity", pct: 40 });
+    expect(parseCommand("Set the background opacity to 75 percent please")).toEqual({
+      type: "backgroundOpacity",
+      pct: 75,
+    });
+  });
+
+  it("accepts 0 and 100, rounds decimals", () => {
+    expect(parseCommand("background opacity 0%")).toEqual({ type: "backgroundOpacity", pct: 0 });
+    expect(parseCommand("background opacity 100%")).toEqual({ type: "backgroundOpacity", pct: 100 });
+    expect(parseCommand("background opacity 40.6")).toEqual({ type: "backgroundOpacity", pct: 41 });
+  });
+
+  it("rejects out-of-range or missing values", () => {
+    expect(parseCommand("background opacity 101%")).toBeNull();
+    expect(parseCommand("background opacity -10")).toBeNull();
+    expect(parseCommand("background opacity")).toBeNull();
+  });
+
+  it("remove / clear background → clearBackground", () => {
+    expect(parseCommand("remove background")).toEqual({ type: "clearBackground" });
+    expect(parseCommand("Clear the background")).toEqual({ type: "clearBackground" });
+    expect(parseCommand("delete background")).toEqual({ type: "clearBackground" });
+  });
+
+  it("never falls through to other commands", () => {
+    // "stop" would be pause, "show" a select, and "back" previous.
+    expect(parseCommand("stop background")).toBeNull();
+    expect(parseCommand("show background")).toBeNull();
+    expect(parseCommand("background")).toBeNull();
+  });
+
+  it("can't produce the upload notice from text", () => {
+    expect(parseCommand("background photo")).toBeNull();
+  });
+
+  it("leaves the existing commands alone", () => {
+    expect(parseCommand("back")).toEqual({ type: "previous" });
+    expect(parseCommand("stop")).toEqual({ type: "pause" });
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("clear")).toBeNull();
+    expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", pct: 5 });
+  });
+});

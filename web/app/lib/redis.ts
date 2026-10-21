@@ -111,3 +111,30 @@ export async function checkRateLimit(code: string): Promise<boolean> {
   const count = results[0] as number;
   return count <= RATE_LIMIT;
 }
+
+/** Redis key for a background photo on its way from the phone to the TV. */
+export function backgroundKey(code: string): string {
+  return `remote:${code}:bg`;
+}
+
+/**
+ * A photo only waits here until the TV fetches it, which normally takes a
+ * few seconds; if the TV never does, it expires after 10 minutes.
+ */
+export const BACKGROUND_TTL = 600;
+
+/** Store a photo (base64 JPEG) for the TV to fetch, replacing any earlier one. */
+export async function saveBackground(code: string, base64: string): Promise<void> {
+  await getRedis()!.set(backgroundKey(code), base64, { ex: BACKGROUND_TTL });
+}
+
+/**
+ * Return the stored photo and delete it in the same command (GETDEL), so it
+ * leaves the server the moment the TV has it, and a newer upload arriving
+ * meanwhile can't be deleted by mistake. Null when there's none.
+ */
+export async function takeBackground(code: string): Promise<string | null> {
+  // Base64 of a JPEG starts with "/9j/", so the client's automatic JSON
+  // parsing always falls back to returning the raw string.
+  return getRedis()!.getdel<string>(backgroundKey(code));
+}

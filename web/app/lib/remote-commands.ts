@@ -9,7 +9,12 @@ export type RemoteCommand =
   /** A percentage move alert; without a direction it fires either way. */
   | { type: "alert"; symbol: string; direction?: "up" | "down"; pct: number }
   /** A price-level alert; without a direction ("hits") the TV picks it from the current price. */
-  | { type: "priceAlert"; symbol: string; price: number; direction?: "above" | "below" };
+  | { type: "priceAlert"; symbol: string; price: number; direction?: "above" | "below" }
+  /** A background photo is waiting for the TV. Only the upload route sends it; it's never parsed from text. */
+  | { type: "background" }
+  /** How strongly the background photo shows, 0–100. */
+  | { type: "backgroundOpacity"; pct: number }
+  | { type: "clearBackground" };
 
 /** Aliases: lowercase name / alias → ticker symbol. */
 const ALIASES: Record<string, string> = {
@@ -108,6 +113,18 @@ function parseAlert(norm: string): RemoteCommand | null {
   return { type: "priceAlert", symbol, price: value, direction };
 }
 
+/** "background opacity 40%" → opacity; "remove background" → clear. */
+function parseBackground(norm: string): RemoteCommand | null {
+  if (/\bopacity\b/.test(norm)) {
+    const match = norm.match(/(-?\d+(?:\.\d+)?)\s*(?:%|percent)?/);
+    if (!match) return null;
+    const pct = Math.round(parseFloat(match[1]));
+    return pct >= 0 && pct <= 100 ? { type: "backgroundOpacity", pct } : null;
+  }
+  if (/\b(?:remove|clear|delete)\b/.test(norm)) return { type: "clearBackground" };
+  return null;
+}
+
 /**
  * Pure function: turns free text into a RemoteCommand or null.
  * R3 / R4 – case insensitive, filler words ignored.
@@ -120,6 +137,10 @@ export function parseCommand(text: string): RemoteCommand | null {
   // --- alerts come first: phrases like "falls back to 100" or "stops at
   // 80k" must not be read as navigation commands. ---
   if (ALERT_VERB.test(norm)) return parseAlert(norm);
+
+  // --- background photo: anything about the background stops here, so
+  // e.g. "stop background" can't fall through to pause. ---
+  if (/\bbackground\b/.test(norm)) return parseBackground(norm);
 
   // --- pause / stop / freeze ---
   if (/\b(pause|stop|freeze)\b/.test(norm)) return { type: "pause" };
