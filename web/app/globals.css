@@ -84,3 +84,17 @@ body {
   animation: ticker-scroll linear infinite;
   will-change: transform;
 }
+
+/* Candlestick chart fades in when the symbol changes. */
+@keyframes chart-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.chart-fade-in {
+  animation: chart-fade-in 500ms ease-out both;
+}

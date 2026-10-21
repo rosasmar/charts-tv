@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
+import { CandleChart } from "@/app/components/candle-chart";
 import { Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
 import { DEFAULT_ALERT_RULES } from "@/app/lib/alerts";
+import { withLivePrice } from "@/app/lib/candles";
+import { useCandles } from "@/app/lib/use-candles";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
@@ -41,6 +44,7 @@ export function Dashboard({
     [demoRules],
   );
   const alert = usePriceAlerts(items, alertRules);
+  const candles = useCandles();
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);
@@ -133,8 +137,6 @@ export function Dashboard({
   return (
     <main className="grid min-h-0 grid-cols-[1fr_34rem] gap-[2rem]">
       <AlertBanner alert={alert} />
-      {/* TODO: Replace with the live candlestick chart for the selected
-          symbol once the chart component lands. */}
       <section
         aria-label="Chart"
         className="relative flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-panel-border bg-panel p-[2.5rem]"
@@ -152,9 +154,14 @@ export function Dashboard({
             {rotating ? "Auto-rotating" : "Paused"}
           </div>
         </div>
-        <div className="flex flex-1 items-center justify-center text-[1.5rem] text-muted">
-          Chart
-        </div>
+        <CandleChart
+          candles={
+            selected && candles[selected.symbol]
+              ? withLivePrice(candles[selected.symbol], selected.price)
+              : undefined
+          }
+          caption={selected?.symbol === "AMZN" ? "30-min candles · 5 days" : "30-min candles · 24 hours"}
+        />
         <WhatsMovingPanel />
         {badge && (
           <div

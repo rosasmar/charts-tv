@@ -34,25 +34,22 @@ export function WhatsMovingPanel() {
 
   if (!summary) return null;
   return (
-    <div className="rounded-[1.5rem] border border-panel-border bg-black/40 px-[2rem] py-[1.5rem]">
-      <div className="flex items-center justify-between text-[1.25rem] font-semibold uppercase tracking-[0.2em] text-muted">
-        <span>What&apos;s moving</span>
-        <span className="normal-case tracking-normal font-normal">
+    <div className="rounded-[1.25rem] border border-panel-border bg-black/40 px-[1.75rem] py-[1rem]">
+      <div className="flex items-baseline gap-[1.25rem]">
+        <span className="shrink-0 text-[1.125rem] font-semibold uppercase tracking-[0.2em] text-muted">
+          What&apos;s moving
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[1.875rem] font-semibold tracking-tight">
+          {summary.headline}
+        </span>
+        <span className="shrink-0 text-[1.125rem] text-muted">
           {summary.source === "claude" ? "Claude on Amazon Bedrock" : "From prices"}
         </span>
       </div>
-      <div className="mt-[0.75rem] text-[2.25rem] font-semibold leading-tight tracking-tight">
-        {summary.headline}
-      </div>
       {summary.points.length > 0 && (
-        <ul className="mt-[0.75rem] space-y-[0.25rem] text-[1.5rem] text-foreground/80">
+        <ul className="mt-[0.375rem] flex flex-wrap gap-x-[2rem] gap-y-[0.25rem] text-[1.375rem] text-foreground/80">
           {summary.points.map((point) => (
-            <li key={point} className="flex gap-[0.75rem]">
-              <span aria-hidden className="text-muted">
-                –
-              </span>
-              {point}
-            </li>
+            <li key={point}>{point}</li>
           ))}
         </ul>
       )}

@@ -10,6 +10,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 |---|---|
 | **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
+| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
@@ -44,6 +45,7 @@ flowchart LR
     wm["/api/whats-moving<br/>cached 10 min"]
   end
   web --> market["/api/market<br/>cached 1 min"] --> prices[(CoinGecko · Yahoo Finance)]
+  web --> candles["/api/candles<br/>cached 5 min"] --> prices
   web --> news --> feeds[(RSS feeds)]
   web --> wm --> bedrock[(Amazon Bedrock<br/>Claude)]
   wm --> news
@@ -101,9 +103,9 @@ The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`.
 
 ```
 web/                 Next.js app (UI + API routes)
-  app/components/    clock, dashboard, watchlist, alert banner, news ticker, what's moving, night dim, burn-in
-  app/lib/           pure logic + tests (market, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
-  app/api/           /api/market, /api/news, /api/whats-moving
+  app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, burn-in
+  app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
+  app/api/           /api/market, /api/candles, /api/news, /api/whats-moving
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)
 docs/
   friction-log.md    every snag we hit with the Vega SDK, the VVD and Bedrock
