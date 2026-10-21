@@ -12,7 +12,8 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
-| **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big 24h move. |
+| **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
+| **Live prices** | AMZN plus five major coins, refreshed every minute: crypto from CoinGecko, AMZN from Yahoo Finance. Fetched server-side and shared by every TV, and any provider can fail without leaving gaps on the board. |
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
@@ -42,9 +43,11 @@ flowchart LR
     news["/api/news<br/>RSS, cached 10 min"]
     wm["/api/whats-moving<br/>cached 10 min"]
   end
+  web --> market["/api/market<br/>cached 1 min"] --> prices[(CoinGecko · Yahoo Finance)]
   web --> news --> feeds[(RSS feeds)]
   web --> wm --> bedrock[(Amazon Bedrock<br/>Claude)]
   wm --> news
+  wm --> market
 ```
 
 - **`vega/`** is a thin Vega WebView wrapper. It loads the web app, passes remote keys through, and forwards the page's console output into the device log (`[web]` lines in `vega device start-log-stream`), which makes the page debuggable on the VVD.
@@ -68,7 +71,7 @@ Useful URL flags:
 
 | Flag | Effect |
 |---|---|
-| `?demo=1` | Scripted price moves for demos: AMZN breaks $230 at 6 s, DOGE drops past −5% at 22 s |
+| `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 6 s, and DOGE drops through a level 3% below at 22 s |
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
@@ -99,8 +102,8 @@ The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`.
 ```
 web/                 Next.js app (UI + API routes)
   app/components/    clock, dashboard, watchlist, alert banner, news ticker, what's moving, night dim, burn-in
-  app/lib/           pure logic + tests (alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
-  app/api/           /api/news, /api/whats-moving
+  app/lib/           pure logic + tests (market, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
+  app/api/           /api/market, /api/news, /api/whats-moving
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)
 docs/
   friction-log.md    every snag we hit with the Vega SDK, the VVD and Bedrock
@@ -109,7 +112,7 @@ docs/
 
 ## Known limitations
 
-- **Watchlist data is mock data for now.** A live market data feed is in progress. Alerts and the What's moving panel already work against whatever the feed provides.
+- **AMZN comes from Yahoo Finance's unofficial chart endpoint.** It needs no key, but it isn't a published API. If it fails, AMZN keeps its last value. Crypto prices come from CoinGecko's free public API.
 - **Alexa voice is untested.** The Vega Virtual Device can't inject voice commands. The remote's media buttons are tested; the voice path relies on the documented Media Session integration.
 - **The screensaver still starts after 5 minutes without remote input** on a real Fire TV. We couldn't find a supported way for a non-video app to keep the screen awake; details are in `docs/friction-log.md` (entries 12–13).
 - **Bedrock access depends on the AWS account.** AWS support told us our new account needs spend and usage history before it can use Anthropic models (friction-log entries 14–17). The panel falls back to a price summary until it runs on an account with access.

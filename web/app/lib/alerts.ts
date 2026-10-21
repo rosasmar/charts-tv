@@ -18,14 +18,14 @@ export type PriceAlert = {
 
 // TODO: Let viewers set their own alerts (e.g. from the phone companion)
 // instead of this fixed list.
+// Percentage moves work at any price level, unlike fixed price lines.
 export const DEFAULT_ALERT_RULES: AlertRule[] = [
-  { symbol: "AMZN", kind: "above", price: 230 },
-  { symbol: "AMZN", kind: "below", price: 220 },
-  { symbol: "BTC", kind: "above", price: 110_000 },
-  { symbol: "BTC", kind: "below", price: 100_000 },
+  { symbol: "AMZN", kind: "move", pct: 3 },
+  { symbol: "BTC", kind: "move", pct: 5 },
   { symbol: "ETH", kind: "move", pct: 5 },
   { symbol: "SOL", kind: "move", pct: 8 },
-  { symbol: "DOGE", kind: "move", pct: 5 },
+  { symbol: "XRP", kind: "move", pct: 8 },
+  { symbol: "DOGE", kind: "move", pct: 8 },
 ];
 
 // Compares two snapshots of the watchlist and returns the alerts whose

@@ -56,3 +56,27 @@ describe("evaluateAlerts", () => {
     expect(evaluateAlerts([item("ETH", 1)], [item("AMZN", 300)], above)).toEqual([]);
   });
 });
+
+describe("demo plan through the alert engine", () => {
+  it("fires an up alert for AMZN and a down alert for DOGE at live prices", async () => {
+    const { buildDemoPlan } = await import("./use-demo-prices");
+    const live = [
+      { symbol: "AMZN", name: "Amazon", price: 262.63, change24h: 0.07 },
+      { symbol: "DOGE", name: "Dogecoin", price: 0.081624, change24h: 3.4 },
+    ];
+    const plan = buildDemoPlan(live);
+    expect(plan.rules).toEqual([
+      { symbol: "AMZN", kind: "above", price: 265 },
+      { symbol: "DOGE", kind: "below", price: 0.0792 },
+    ]);
+    const after = live.map((item) => {
+      const step = plan.steps.find((s) => s.symbol === item.symbol)!;
+      return { ...item, price: step.price, change24h: step.change24h };
+    });
+    const alerts = evaluateAlerts(live, after, plan.rules);
+    expect(alerts.map((a) => [a.symbol, a.direction, a.title])).toEqual([
+      ["AMZN", "up", "AMZN broke above $265.00"],
+      ["DOGE", "down", "DOGE fell below $0.0792"],
+    ]);
+  });
+});

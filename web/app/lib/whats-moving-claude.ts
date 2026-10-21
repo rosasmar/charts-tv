@@ -4,7 +4,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { cacheLife } from "next/cache";
 import { z } from "zod";
 import { getHeadlines } from "./news";
-import { MOCK_WATCHLIST } from "./watchlist";
+import { getMarketData } from "./market-data";
 import {
   WHATS_MOVING_SYSTEM_PROMPT,
   buildWhatsMovingPrompt,
@@ -35,9 +35,7 @@ export async function getWhatsMoving(): Promise<WhatsMoving> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 600, expire: 3_600 });
 
-  // TODO: Use the live market data feed instead of the mock watchlist once
-  // it lands, so the summary matches what's on screen.
-  const items = MOCK_WATCHLIST;
+  const { items } = await getMarketData();
   const fallback = summarizeFromPrices(items);
 
   try {
