@@ -6,7 +6,10 @@ export type RemoteCommand =
   | { type: "previous" }
   | { type: "pause" }
   | { type: "play" }
-  | { type: "alert"; symbol: string; direction: "up" | "down"; pct: number };
+  /** A percentage move alert; without a direction it fires either way. */
+  | { type: "alert"; symbol: string; direction?: "up" | "down"; pct: number }
+  /** A price-level alert; without a direction ("hits") the TV picks it from the current price. */
+  | { type: "priceAlert"; symbol: string; price: number; direction?: "above" | "below" };
 
 /** Aliases: lowercase name / alias → ticker symbol. */
 const ALIASES: Record<string, string> = {
@@ -60,6 +63,51 @@ function extractSymbol(fragment: string): string | null {
   return null;
 }
 
+const ALERT_VERB = /\b(?:alert|tell|notify|warn|ping)\b/;
+const UP_WORDS = /\b(?:up|rises?|rising|surges?|gains?|gained|jumps?|climbs?|above|over|higher)\b/;
+const DOWN_WORDS = /\b(?:down|drops?|dropping|falls?|falling|loses?|dips?|below|under|lower|sinks?)\b/;
+const LEVEL_WORDS = /\b(?:hits?|reaches?|crosses|touches|at|above|over|below|under)\b/;
+const PCT_RE = /(\d+(?:\.\d+)?)\s*(?:%|percent(?:age)?)/;
+// A number, optionally with $, thousands separators or a k suffix.
+const NUMBER_RE = /(\$)?\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k)?\b/;
+
+/**
+ * "alert me if bitcoin drops 5 percent" → a percentage alert;
+ * "alert me if btc hits 83,700" / "… goes above 84k" → a price-level alert.
+ */
+function parseAlert(norm: string): RemoteCommand | null {
+  const symbol = extractSymbol(norm);
+  if (!symbol) return null;
+  const up = UP_WORDS.test(norm);
+  const down = DOWN_WORDS.test(norm);
+  const pctDirection = up && !down ? "up" : down && !up ? "down" : undefined;
+
+  const pctMatch = norm.match(PCT_RE);
+  if (pctMatch) {
+    const pct = parseFloat(pctMatch[1]);
+    if (!(pct >= 1 && pct <= 50)) return null;
+    return { type: "alert", symbol, direction: pctDirection, pct };
+  }
+
+  const numberMatch = norm.match(NUMBER_RE);
+  if (!numberMatch) return null;
+  const value = parseFloat(numberMatch[2].replace(/,/g, "")) * (numberMatch[3] ? 1000 : 1);
+  if (!(value > 0)) return null;
+
+  // "drops 5" with no %, $ or level word: a percentage, as before.
+  if (!numberMatch[1] && !numberMatch[3] && !LEVEL_WORDS.test(norm) && value <= 50) {
+    if (value < 1) return null;
+    return { type: "alert", symbol, direction: pctDirection, pct: value };
+  }
+
+  const direction = /\b(?:above|over|higher)\b/.test(norm) || (up && !down)
+    ? "above"
+    : /\b(?:below|under|lower)\b/.test(norm) || (down && !up)
+      ? "below"
+      : undefined;
+  return { type: "priceAlert", symbol, price: value, direction };
+}
+
 /**
  * Pure function: turns free text into a RemoteCommand or null.
  * R3 / R4 – case insensitive, filler words ignored.
@@ -68,6 +116,10 @@ export function parseCommand(text: string): RemoteCommand | null {
   if (!text || text.length > 200) return null;
 
   const norm = normalise(text);
+
+  // --- alerts come first: phrases like "falls back to 100" or "stops at
+  // 80k" must not be read as navigation commands. ---
+  if (ALERT_VERB.test(norm)) return parseAlert(norm);
 
   // --- pause / stop / freeze ---
   if (/\b(pause|stop|freeze)\b/.test(norm)) return { type: "pause" };
@@ -80,27 +132,6 @@ export function parseCommand(text: string): RemoteCommand | null {
 
   // --- previous / back ---
   if (/\b(previous|prev|back)\b/.test(norm)) return { type: "previous" };
-
-  // --- alert: "alert me if bitcoin drops 5 percent" ---
-  // Patterns: "alert [me] [if|when] <symbol> [is] (up|drops|down|rises|falls) <n> [%|percent]"
-  const alertRe =
-    /\b(?:alert|tell|notify|warn)\b.*?(?:\bif\b|\bwhen\b)?\s*(.+?)\s+(?:is\s+)?(up|rises?|surges?|gained?|drops?|falls?|down|loses?|down\s+by)\s+(\d+(?:\.\d+)?)\s*(?:%|percent(?:age)?)?/;
-  const alertMatch = norm.match(alertRe);
-  if (alertMatch) {
-    const symbolHint = alertMatch[1];
-    const dirWord = alertMatch[2];
-    const pctStr = alertMatch[3];
-    const sym = extractSymbol(symbolHint);
-    if (sym) {
-      const pct = parseFloat(pctStr);
-      if (pct >= 1 && pct <= 50) {
-        const direction =
-          /\b(up|rises?|surges?|gained?)\b/.test(dirWord) ? "up" : "down";
-        return { type: "alert", symbol: sym, direction, pct };
-      }
-    }
-    return null;
-  }
 
   // --- select: "show / switch to / go to / open / chart <symbol>" ---
   const selectRe =
