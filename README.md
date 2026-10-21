@@ -1,8 +1,8 @@
-# TickerTV
+# ChartsTV
 
 **An always-on market screen for Fire TV.** It shows your watchlist, live headlines and price alerts, reads from across the room, and is driven entirely by the remote.
 
-**Live:** https://tickertv.vercel.app (best viewed full screen at 1920×1080, or on a Fire TV).
+**Live:** https://chartstv.vercel.app (best viewed full screen at 1920×1080, or on a Fire TV).
 
 Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/) (Fire TV track) and runs on **Vega OS** and the **Vega Virtual Device**.
 
@@ -97,10 +97,10 @@ See **[`vega/README.md`](vega/README.md)** for installing the Vega SDK, building
 source ~/vega/env
 vega virtual-device start
 cd vega && npm install && npm run build:debug
-vega run-app build/aarch64-debug/tickertv_aarch64.vpkg com.chartstv.tickertv.main -d VirtualDevice
+vega run-app build/aarch64-debug/chartstv_aarch64.vpkg com.chartstv.chartstv.main -d VirtualDevice
 ```
 
-The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`, which is the production deployment at **https://tickertv.vercel.app**.
+The wrapper loads the URL in `APP_URL` in `vega/src/App.tsx`, which is the production deployment at **https://chartstv.vercel.app**.
 
 ### Phone companion (optional)
 

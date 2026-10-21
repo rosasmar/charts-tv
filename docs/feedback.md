@@ -1,6 +1,6 @@
 # Product feedback
 
-This file answers Devpost's product-feedback questions for each Amazon tool, API and SDK we used to build TickerTV. Specific issues, with steps and workarounds, are in [`friction-log.md`](friction-log.md), and the numbers in brackets like [#12] refer to its entries.
+This file answers Devpost's product-feedback questions for each Amazon tool, API and SDK we used to build ChartsTV. Specific issues, with steps and workarounds, are in [`friction-log.md`](friction-log.md), and the numbers in brackets like [#12] refer to its entries.
 
 ## Tools at a glance
 

@@ -19,7 +19,7 @@ export default async function Home() {
           {remoteAvailable && <RemoteBlock />}
           <div className="text-right">
             <div className="text-[2.5rem] font-semibold tracking-tight">
-              TickerTV
+              ChartsTV
             </div>
             <div className="mt-2 text-[1.25rem] text-muted">Crypto &amp; stocks</div>
           </div>

@@ -126,7 +126,7 @@ export function RemoteUI({ code }: { code: string }) {
 
   return (
     <div style={styles.page}>
-      <h1 style={styles.title}>TickerTV Remote</h1>
+      <h1 style={styles.title}>ChartsTV Remote</h1>
       <div style={styles.codeLabel}>
         Code: <span style={styles.code}>{code}</span>
       </div>

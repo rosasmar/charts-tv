@@ -1,9 +1,9 @@
 schema-version = 1
 
 [package]
-title = "TickerTV"
+title = "ChartsTV"
 version = "0.1.0"
-id = "com.chartstv.tickertv"
+id = "com.chartstv.chartstv"
 
 [os.version]
 min = "1.2"
@@ -23,7 +23,7 @@ id = "/com.amazon.kepler.webview_4@IWebview_4"
 
 [components]
 [[components.interactive]]
-id = "com.chartstv.tickertv.main"
+id = "com.chartstv.chartstv.main"
 runtime-module = "/com.amazon.kepler.runtime.react_native_kepler_4@IReactNativeKepler_0"
 launch-type = "singleton"
 categories = ["com.amazon.category.main"]

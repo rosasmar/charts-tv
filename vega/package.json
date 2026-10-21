@@ -1,5 +1,5 @@
 {
-  "name": "@amazon-devices/tickertv",
+  "name": "@amazon-devices/chartstv",
   "version": "0.0.1",
   "private": true,
   "files": ["dist"],
@@ -50,7 +50,7 @@
   },
   "kepler": {
     "projectType": "application",
-    "appName": "tickertv",
+    "appName": "chartstv",
     "targets": ["tv"]
   },
   "overrides": {
