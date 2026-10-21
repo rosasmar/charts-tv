@@ -23,6 +23,11 @@
   --qr-background: #000000;
   /* Behind the header when a background photo is set (RGB channels). */
   --scrim: 0 0 0;
+  /* Glows, only lit in the neon theme. The ring glow sits in a shadow list,
+     so its "off" value is an empty shadow rather than none. */
+  --panel-glow: none;
+  --badge-glow: none;
+  --ring-glow: 0 0 #0000;
 }
 
 /* Light theme for bright rooms, picked from the phone (or "auto" by day).
@@ -62,6 +67,54 @@
 :root[data-theme="light"][data-background] {
   --panel: rgb(243 241 236 / calc(0.55 + 0.4 * var(--background-opacity, 0.35)));
   --panel-border: rgba(0, 0, 0, 0.12);
+}
+
+/* Neon lights: a navy-to-purple gradient sky with soft pink and blue glows
+   (neon-backdrop.tsx), violet-edged panels that let it show through, a
+   magenta focus ring, and electric blue and hot pink for up and down, with a
+   halo around every candle. Glows are static box-shadows and layered SVG (no
+   filters or backdrop blur), and numbers get no text-shadow so prices stay
+   crisp from across the room. */
+:root[data-theme="neon"] {
+  --background: #0a0619;
+  --foreground: #f4f1ff;
+  --muted: #a49bd0;
+  --panel: rgb(18 10 42 / 0.8);
+  --panel-border: rgba(176, 120, 255, 0.6);
+  --up: #4dabff;
+  --down: #ff3d7f;
+  --highlight: #ff4fd8;
+  --chart-grid: rgba(176, 120, 255, 0.14);
+  --price-tag-text: #0a0619;
+  --alert-info: #160c35;
+  --alert-info-glow: #ff4fd8;
+  --alert-up: #04261a;
+  --alert-down: #2b0618;
+  /* A solid color on a solid background, so the code still scans. */
+  --qr-modules: #2de2ff;
+  --qr-background: #0a0619;
+  --panel-glow: 0 0 1.5rem rgba(176, 120, 255, 0.45), inset 0 0 1.25rem rgba(176, 120, 255, 0.14);
+  --badge-glow: 0 0 2.5rem rgba(255, 79, 216, 0.7);
+  --ring-glow: 0 0 1rem rgba(255, 79, 216, 0.9), 0 0 2.5rem rgba(255, 79, 216, 0.5);
+}
+
+/* Neon is its own look: a background photo (and its header scrim) is hidden
+   while it's on, and kept for when the theme changes back. Neon's solid
+   panels above already override the translucent photo panels. */
+:root[data-theme="neon"] .background-photo {
+  display: none;
+}
+
+/* Neon-only layers: the gradient backdrop and the candle halos. */
+.neon-backdrop,
+.candle-glow {
+  display: none;
+}
+:root[data-theme="neon"] .neon-backdrop {
+  display: block;
+}
+:root[data-theme="neon"] .candle-glow {
+  display: inline;
 }
 
 @theme inline {
@@ -176,4 +229,38 @@ html:has([data-phone-remote]) body {
 
 .qr-code path[stroke] {
   stroke: var(--qr-modules);
+}
+
+/* Neon: the wordmark glows like a sign and flickers on once when the theme
+   switches on. Only opacity animates, on one small element, and only once. */
+:root[data-theme="neon"] .wordmark {
+  color: #ffe6fb;
+  text-shadow:
+    0 0 0.15rem #ff8ae6,
+    0 0 0.75rem #ff4fd8,
+    0 0 1.75rem rgba(255, 79, 216, 0.7),
+    0 0 3.5rem rgba(77, 171, 255, 0.5);
+  animation: neon-flicker 1.4s steps(1, end);
+}
+
+@keyframes neon-flicker {
+  0% {
+    opacity: 0.15;
+  }
+  12% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.3;
+  }
+  26% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.55;
+  }
+  54%,
+  100% {
+    opacity: 1;
+  }
 }

@@ -1,5 +1,6 @@
 import { BackgroundPhoto } from "@/app/components/background-photo";
 import { BurnInShift } from "@/app/components/burn-in-shift";
+import { NeonBackdrop } from "@/app/components/neon-backdrop";
 import { Clock } from "@/app/components/clock";
 import { Dashboard } from "@/app/components/dashboard";
 import { NewsTicker } from "@/app/components/news-ticker";
@@ -18,13 +19,14 @@ export default async function Home() {
       {/* First, so a saved light theme is set before anything paints. */}
       <Theme />
       <BackgroundPhoto />
+      <NeonBackdrop />
 
       <header className="flex items-start justify-between">
         <Clock />
         <div className="flex items-start gap-[2.5rem]">
           {remoteAvailable && <RemoteBlock />}
           <div className="text-right">
-            <div className="text-[2.5rem] font-semibold tracking-tight">
+            <div className="wordmark text-[2.5rem] font-semibold tracking-tight">
               ChartsTV
             </div>
             <div className="mt-2 text-[1.25rem] text-muted">Crypto &amp; stocks</div>

@@ -109,6 +109,31 @@ function Plot({
         );
       })}
 
+      {/* Neon only: a soft halo behind each candle, drawn as wider, faint
+          copies rather than a blur filter, which is costly on TV GPUs. Hidden
+          (and not painted) in the other themes. */}
+      <g className="candle-glow" transform={`translate(0, ${top})`}>
+        {shapes.map((s, i) => {
+          const color = s.up ? "var(--up)" : "var(--down)";
+          const cx = s.x + s.width / 2;
+          const pad = Math.max(s.width * 0.45, 0.2 * rem);
+          return (
+            <g key={candles[i].t} fill={color} stroke={color}>
+              <line x1={cx} x2={cx} y1={s.wickTop} y2={s.wickBottom} strokeWidth={0.7 * rem} opacity={0.25} />
+              <rect
+                x={s.x - pad}
+                y={s.bodyTop - pad}
+                width={s.width + 2 * pad}
+                height={s.bodyHeight + 2 * pad}
+                rx={pad}
+                stroke="none"
+                opacity={0.32}
+              />
+            </g>
+          );
+        })}
+      </g>
+
       <g transform={`translate(0, ${top})`}>
         {shapes.map((s, i) => {
           const color = s.up ? "var(--up)" : "var(--down)";

@@ -13,7 +13,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Always-on layout** | Pure black screen (or a light theme, see below) with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
 | **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for stocks. From the phone you can switch to **1-minute candles** for the last hour (coins from Kraken, stocks from the latest trading session), and the TV remembers the choice. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
-| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "alert me if bitcoin drops 5 percent", "1 minute candles" / "30 minute candles", or tap 1m / 30m), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "neon lights", "alert me if bitcoin drops 5 percent", "1 minute candles" / "30 minute candles", or tap 1m / 30m), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Custom background** | From the phone remote, pick a photo to replace the black background and set how strongly it shows. The panels turn translucent, and denser as the photo gets stronger, so text stays readable from across the room. Night dim still covers it, and the photo stays on the TV, not the server (see [Phone companion](#phone-companion-optional)). |
 | **Pick your watchlist** | From the phone remote, search for any US stock, ETF, index or coin, build a list of up to 10 and send it to the TV. The TV remembers it across restarts, and lists of 8–10 switch to compact tiles so they still fit. "Reset" goes back to the default board. |
 | **Favorites** | Star symbols in the phone's watchlist, or say "favorite bitcoin" / "unpin bitcoin", and they're pinned to the top of the board with a gold star. The TV remembers them across restarts. |
@@ -24,7 +24,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
-| **Light mode** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast. Pick Dark (the default), Light or Auto (light by day, dark from 22:00 to 07:00) with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode" or "auto mode". The TV remembers the choice across reloads. |
+| **Light mode + neon lights** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast, and a just-for-fun neon theme: deep purple with glowing cyan panels, a magenta focus ring, electric green and hot pink. Pick Dark (the default), Light, Auto (light by day, dark from 22:00 to 07:00) or Neon with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode", "auto mode" or "neon lights". The TV remembers the choice across reloads. |
 | **Burn-in protection** | The whole layout drifts 6 px to a new position every 2 minutes, cycling through 9 positions. |
 
 ### Remote controls
@@ -100,7 +100,7 @@ Useful URL flags:
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
 | `?candles=1m` / `?candles=30m` | Show 1-minute or 30-minute candles, overriding the choice saved on the TV |
-| `?theme=light` / `?theme=dark` / `?theme=auto` | Use this theme for the page load, over the one saved from the phone |
+| `?theme=light` / `?theme=dark` / `?theme=auto` / `?theme=neon` | Use this theme for the page load, over the one saved from the phone |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
 | `?news=amazon` | Only About Amazon headlines in the ticker |
 

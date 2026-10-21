@@ -134,21 +134,32 @@ function parseAlert(norm: string): RemoteCommand | null {
   return { type: "priceAlert", symbol, price: value, direction };
 }
 
-const THEME_RE = /\b(light|day|dark|night|auto(?:matic)?)\s+(?:mode|theme)\b/;
+const THEME_RE =
+  /\b(?:(light|day|dark|night|auto(?:matic)?|neon)\s+(?:mode|theme)|(neon)\s+lights?)\b/;
+
+const THEME_WORDS: Record<string, ThemeSetting> = {
+  light: "light",
+  day: "light",
+  dark: "dark",
+  night: "dark",
+  auto: "auto",
+  automatic: "auto",
+  neon: "neon",
+};
 
 /**
  * "light mode" / "day mode" → light, "dark mode" / "night mode" → dark,
- * "auto mode" / "auto theme" → auto. "turn off dark mode" means light.
+ * "auto mode" / "auto theme" → auto, "neon mode" / "neon lights" → neon.
+ * "turn off dark mode" means light and vice versa; turning neon off goes back
+ * to dark, the default.
  */
 function parseTheme(norm: string): RemoteCommand | null {
   const match = norm.match(THEME_RE);
   if (!match) return null;
-  const word = match[1];
-  const theme: ThemeSetting =
-    word === "light" || word === "day" ? "light" : word === "dark" || word === "night" ? "dark" : "auto";
+  const theme = THEME_WORDS[match[1] ?? match[2]];
   if (!/\b(?:off|disable)\b/.test(norm)) return { type: "theme", theme };
   if (theme === "auto") return null; // "auto mode off" doesn't say which theme.
-  return { type: "theme", theme: theme === "light" ? "dark" : "light" };
+  return { type: "theme", theme: theme === "dark" ? "light" : "dark" };
 }
 
 /** "background opacity 40%" → opacity; "remove background" → clear. */
