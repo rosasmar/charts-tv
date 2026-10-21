@@ -3,8 +3,9 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MAX_WATCHLIST, WATCHLIST_SOURCES } from "@/app/lib/market";
 import type { SymbolMatch } from "@/app/lib/symbol-search";
+import { pinFavorites } from "@/app/lib/watchlist";
 
-type Pick = { symbol: string; name: string };
+type Pick = { symbol: string; name: string; favorite?: boolean };
 
 const STORAGE_KEY = "chartstv:picks";
 const DEFAULT_PICKS: Pick[] = WATCHLIST_SOURCES.map(({ symbol, name }) => ({ symbol, name }));
@@ -45,8 +46,9 @@ function subscribe(listener: () => void) {
 
 /**
  * The phone's watchlist picker: search for stocks, ETFs, indexes and coins,
- * build a list of up to 10 and send it to the TV as one "watchlist …"
- * command. Commands only go phone → TV, so the phone can't read the TV's
+ * build a list of up to 10, star favorites (pinned to the top of the board)
+ * and send it all to the TV as one "watchlist …" command, with favorites
+ * marked "*". Commands only go phone → TV, so the phone can't read the TV's
  * list; it remembers its own draft and starts from that, or the default board.
  */
 export function WatchlistPicker({ send }: { send: (text: string) => Promise<boolean> }) {
@@ -56,8 +58,10 @@ export function WatchlistPicker({ send }: { send: (text: string) => Promise<bool
   const results = query.trim() ? found : [];
   const [sent, setSent] = useState(false);
 
+  // The draft is kept in the board's order, favorites first, so the phone
+  // shows what the TV will.
   const update = (next: Pick[]) => {
-    saveDraft(next);
+    saveDraft(pinFavorites(next, next.filter((p) => p.favorite).map((p) => p.symbol)));
     setSent(false);
   };
 
@@ -90,6 +94,8 @@ export function WatchlistPicker({ send }: { send: (text: string) => Promise<bool
     setQuery("");
   };
   const remove = (symbol: string) => update(picks.filter((p) => p.symbol !== symbol));
+  const toggleFavorite = (symbol: string) =>
+    update(picks.map((p) => (p.symbol === symbol ? { ...p, favorite: !p.favorite } : p)));
   const moveUp = (index: number) => {
     if (index === 0) return;
     const next = [...picks];
@@ -141,6 +147,14 @@ export function WatchlistPicker({ send }: { send: (text: string) => Promise<bool
       <ol style={styles.list} aria-label="Your list">
         {picks.map((pick, index) => (
           <li key={pick.symbol} style={styles.pickRow}>
+            <button
+              style={{ ...styles.iconBtn, ...(pick.favorite ? styles.starOn : {}) }}
+              onClick={() => toggleFavorite(pick.symbol)}
+              aria-pressed={!!pick.favorite}
+              aria-label={`Favorite ${pick.symbol}`}
+            >
+              {pick.favorite ? "★" : "☆"}
+            </button>
             <span style={styles.symbol}>{pick.symbol}</span>
             <span style={styles.name}>{pick.name}</span>
             <button
@@ -166,7 +180,13 @@ export function WatchlistPicker({ send }: { send: (text: string) => Promise<bool
       <div style={styles.actions}>
         <button
           style={styles.sendBtn}
-          onClick={async () => setSent(await send(`watchlist ${picks.map((p) => p.symbol).join(" ")}`))}
+          onClick={async () =>
+            setSent(
+              await send(
+                `watchlist ${picks.map((p) => `${p.favorite ? "*" : ""}${p.symbol}`).join(" ")}`,
+              ),
+            )
+          }
         >
           {sent ? "Sent ✓" : "Send to TV"}
         </button>
@@ -240,7 +260,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#0b0b0b",
     border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: "0.75rem",
-    padding: "0.35rem 0.4rem 0.35rem 0.9rem",
+    padding: "0.35rem 0.4rem",
     fontSize: "0.95rem",
   },
   symbol: {
@@ -269,6 +289,9 @@ const styles: Record<string, React.CSSProperties> = {
     height: "2.5rem",
     flexShrink: 0,
     touchAction: "manipulation",
+  },
+  starOn: {
+    color: "#fbbf24",
   },
   actions: {
     display: "flex",

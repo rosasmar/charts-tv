@@ -9,6 +9,8 @@ import {
 
 type Props = {
   items: WatchlistItem[];
+  /** Symbols pinned to the top; their tiles show a star. */
+  favorites: string[];
   focusedIndex: number;
   selectedSymbol: string;
   /** True while the viewer is using the remote; shows the white focus ring. */
@@ -22,7 +24,7 @@ const FULL_SIZE_TILES = 7;
 // A single highlight springs from tile to tile instead of each tile drawing
 // its own focus ring, so focus is obvious from across the room. While the
 // board just rotates, only the glow shows; the white ring fades in on input.
-export function Watchlist({ items, focusedIndex, selectedSymbol, navigating }: Props) {
+export function Watchlist({ items, favorites, focusedIndex, selectedSymbol, navigating }: Props) {
   const tileRefs = useRef<(HTMLLIElement | null)[]>([]);
   const [highlight, setHighlight] = useState<{ top: number; height: number }>();
 
@@ -63,6 +65,7 @@ export function Watchlist({ items, focusedIndex, selectedSymbol, navigating }: P
           <WatchlistTile
             item={item}
             compact={compact}
+            favorite={favorites.includes(item.symbol)}
             // When idle, the glow already marks the selected tile; the bar
             // only matters while focus can sit on a different tile.
             selected={item.symbol === selectedSymbol && (navigating || index !== focusedIndex)}
@@ -106,13 +109,19 @@ const COMPACT_SIZE = {
   gap: "mt-[0.25rem]",
 };
 
+/** A five-point star in a 24×24 box, for favorites. */
+export const STAR_PATH =
+  "M12 2.5l2.94 6.1 6.56.83-4.82 4.56 1.25 6.51L12 17.27l-5.93 3.23 1.25-6.51-4.82-4.56 6.56-.83z";
+
 function WatchlistTile({
   item,
   compact,
+  favorite,
   selected,
 }: {
   item: WatchlistItem;
   compact: boolean;
+  favorite: boolean;
   selected: boolean;
 }) {
   const up = item.change24h >= 0;
@@ -128,7 +137,15 @@ function WatchlistTile({
         />
       )}
       <div className="min-w-0">
-        <div className={`${size.symbol} font-semibold leading-none`}>{item.symbol}</div>
+        <div className={`flex items-center gap-[0.4em] ${size.symbol} font-semibold leading-none`}>
+          {favorite && (
+            // SVG rather than ★, which the TV's fonts may not have.
+            <svg aria-label="Favorite" viewBox="0 0 24 24" className="h-[0.75em] w-[0.75em] shrink-0 fill-amber-400">
+              <path d={STAR_PATH} />
+            </svg>
+          )}
+          {item.symbol}
+        </div>
         <div className={`${size.gap} truncate ${size.name} text-muted`}>{item.name}</div>
       </div>
       {/* A symbol just added from the phone has no price until its first

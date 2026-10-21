@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { CandleChart } from "@/app/components/candle-chart";
-import { Watchlist } from "@/app/components/watchlist";
+import { STAR_PATH, Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
@@ -18,8 +18,13 @@ import { useCandles } from "@/app/lib/use-candles";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
 import { resolveSource, tradesAroundTheClock } from "@/app/lib/market";
-import { setWatchlistSymbols, useWatchlistSymbols } from "@/app/lib/use-watchlist-symbols";
-import { formatChange, formatPrice } from "@/app/lib/watchlist";
+import {
+  setFavorites,
+  setWatchlistSymbols,
+  useFavorites,
+  useWatchlistSymbols,
+} from "@/app/lib/use-watchlist-symbols";
+import { formatChange, formatPrice, pinFavorites } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
 import { usePairing } from "@/app/lib/use-pairing-code";
@@ -35,7 +40,7 @@ const RING_MS = 4_000;
 /** How long the on-screen badge for a media command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous" | "list";
+type BadgeIcon = "play" | "pause" | "next" | "previous" | "list" | "star";
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -55,8 +60,11 @@ export function Dashboard({
 }) {
   // The viewer's own list from the phone, or null for the default board.
   const symbols = useWatchlistSymbols();
+  const favorites = useFavorites();
   const liveItems = useLiveMarket(sourceItems, symbols);
-  const { items, rules: demoRules } = useDemoPrices(liveItems);
+  const { items: unpinned, rules: demoRules } = useDemoPrices(liveItems);
+  // Favorites sit at the top of the board; everything below works on this order.
+  const items = useMemo(() => pinFavorites(unpinned, favorites), [unpinned, favorites]);
 
   // R12 – remote-added alert rules accumulate here.
   const [remoteAlertRules, setRemoteAlertRules] = useState<AlertRule[]>([]);
@@ -188,10 +196,25 @@ export function Dashboard({
         }
         case "watchlist":
           setWatchlistSymbols(cmd.symbols);
+          setFavorites(cmd.favorites);
           setSelectedIndex(0);
           setFocusedIndex(0);
           showBadge("list", `${cmd.symbols.length} on the board`);
           break;
+        case "favorite": {
+          const next = cmd.on
+            ? [...new Set([...favorites, cmd.symbol])]
+            : favorites.filter((s) => s !== cmd.symbol);
+          setFavorites(next);
+          // Pinning reorders the board; keep the same symbols selected and focused.
+          const reordered = pinFavorites(unpinned, next);
+          const indexOf = (symbol?: string) =>
+            Math.max(0, reordered.findIndex((i) => i.symbol === symbol));
+          setSelectedIndex(indexOf(items[selectedIndex]?.symbol));
+          setFocusedIndex(indexOf(items[focusedIndex]?.symbol));
+          showBadge("star", `${cmd.symbol} ${cmd.on ? "pinned" : "unpinned"}`);
+          break;
+        }
         case "next":
           step(1);
           break;
@@ -306,6 +329,7 @@ export function Dashboard({
 
       <Watchlist
         items={items}
+        favorites={favorites}
         focusedIndex={focusedIndex}
         selectedSymbol={selected?.symbol ?? ""}
         navigating={ringVisible}
@@ -344,6 +368,7 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
         <rect x="3" y="16" width="18" height="4" rx="1" />
       </>
     ),
+    star: <path d={STAR_PATH} />,
   };
   return (
     <svg

@@ -10,8 +10,10 @@ export type RemoteCommand =
   | { type: "alert"; symbol: string; direction?: "up" | "down"; pct: number }
   /** A price-level alert; without a direction ("hits") the TV picks it from the current price. */
   | { type: "priceAlert"; symbol: string; price: number; direction?: "above" | "below" }
-  /** The viewer's own board, in order, e.g. from "watchlist AMZN NVDA BTC". */
-  | { type: "watchlist"; symbols: string[] };
+  /** The viewer's own board, in order; "*" marks favorites: "watchlist *BTC AMZN NVDA". */
+  | { type: "watchlist"; symbols: string[]; favorites: string[] }
+  /** Pin a symbol to the top of the board, or unpin it. */
+  | { type: "favorite"; symbol: string; on: boolean };
 
 /** Aliases: lowercase name / alias → ticker symbol. */
 const ALIASES: Record<string, string> = {
@@ -115,18 +117,30 @@ function parseAlert(norm: string): RemoteCommand | null {
   return { type: "priceAlert", symbol, price: value, direction };
 }
 
-// "AMZN NVDA, bitcoin" → ["AMZN", "NVDA", "BTC"]. Names and aliases map to
-// their ticker; anything else must look like a ticker. Null if any word
-// doesn't, or the list is empty or longer than MAX_WATCHLIST.
+// "*AMZN NVDA, bitcoin" → symbols ["AMZN", "NVDA", "BTC"], favorites
+// ["AMZN"]. Names and aliases map to their ticker; anything else must look
+// like a ticker. Null if any word doesn't, or the list is empty or longer
+// than MAX_WATCHLIST.
 function parseWatchlist(rest: string): RemoteCommand | null {
   const words = rest.split(/[\s,]+/).filter(Boolean);
+  const favorites = new Set<string>();
   const symbols = [
-    ...new Set(words.map((w) => SYMBOL_MAP.get(w.toLowerCase()) ?? w.toUpperCase())),
+    ...new Set(
+      words.map((word) => {
+        const bare = word.replace(/^\*/, "");
+        const symbol = SYMBOL_MAP.get(bare.toLowerCase()) ?? bare.toUpperCase();
+        if (bare !== word) favorites.add(symbol);
+        return symbol;
+      }),
+    ),
   ];
   if (!symbols.length || symbols.length > MAX_WATCHLIST) return null;
   if (!symbols.every(isValidSymbol)) return null;
-  return { type: "watchlist", symbols };
+  return { type: "watchlist", symbols, favorites: [...favorites] };
 }
+
+const UNFAVORITE = /\b(?:unfavou?rite|unstar|unpin)\b|\bremove\b.*\bfavou?rites?\b/;
+const FAVORITE = /\b(?:favou?rites?|star|pin)\b/;
 
 /**
  * Pure function: turns free text into a RemoteCommand or null.
@@ -145,6 +159,14 @@ export function parseCommand(text: string): RemoteCommand | null {
   // --- alerts come first: phrases like "falls back to 100" or "stops at
   // 80k" must not be read as navigation commands. ---
   if (ALERT_VERB.test(norm)) return parseAlert(norm);
+
+  // --- "favorite bitcoin" / "unpin btc": checked before select, which would
+  // otherwise read the bare name as "show bitcoin". ---
+  const on = !UNFAVORITE.test(norm);
+  if (!on || FAVORITE.test(norm)) {
+    const symbol = extractSymbol(norm);
+    return symbol ? { type: "favorite", symbol, on } : null;
+  }
 
   // --- pause / stop / freeze ---
   if (/\b(pause|stop|freeze)\b/.test(norm)) return { type: "pause" };
