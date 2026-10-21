@@ -5,6 +5,7 @@ import {
   parseCoinGeckoOhlc,
   parseKrakenOhlc,
   parseYahooCandles,
+  priceRange,
   priceTicks,
   readCandlesFlag,
   tickDigits,
@@ -129,6 +130,21 @@ describe("tickDigits", () => {
 
   it("is 0 without a step", () => {
     expect(tickDigits([5])).toBe(0);
+  });
+});
+
+describe("priceRange", () => {
+  it("pads the lows-to-highs range by 8% on each side", () => {
+    const candles = [
+      { t: 1, o: 100, h: 110, l: 95, c: 105 },
+      { t: 2, o: 105, h: 120, l: 100, c: 115 },
+    ];
+    expect(priceRange(candles)).toEqual({ min: 95 - 2, max: 120 + 2 });
+  });
+
+  it("gives a flat series some height", () => {
+    const { min, max } = priceRange([{ t: 1, o: 50, h: 50, l: 50, c: 50 }]);
+    expect(max - min).toBeCloseTo(0.08);
   });
 });
 

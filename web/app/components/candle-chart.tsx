@@ -1,11 +1,23 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { layoutCandles, priceTicks, tickDigits, timeTicks, type Candle } from "@/app/lib/candles";
+import {
+  layoutCandles,
+  priceRange,
+  priceTicks,
+  tickDigits,
+  timeTicks,
+  type Candle,
+} from "@/app/lib/candles";
 import { formatPrice } from "@/app/lib/watchlist";
 
-/** Width reserved on the right for price labels, in rem. */
+/** Least width reserved on the right for price labels, in rem. */
 const AXIS_REM = 9;
+/** Font sizes of the gridline labels and the live-price tag, in rem. */
+const TICK_REM = 1.25;
+const TAG_REM = 1.35;
+/** Geist Mono is monospaced: every character is 0.6 em wide. */
+const MONO_ADVANCE = 0.6;
 
 // A candlestick chart drawn as plain SVG: no chart library, nothing to load on
 // the TV, and every size in rem so it reads from across the room. The last
@@ -71,11 +83,22 @@ function Plot({
   const top = 2.5 * rem;
   // Room for the time labels under the candles.
   const bottom = 2.75 * rem;
-  const plotWidth = Math.max(size.width - AXIS_REM * rem, 10);
-  const plotHeight = Math.max(size.height - top - bottom, 10);
-  const { shapes, min, max, y } = layoutCandles(candles, plotWidth, plotHeight, slots);
+  const { min, max } = priceRange(candles);
   const ticks = priceTicks(min, max, 4);
   const digits = tickDigits(ticks);
+  const tagLabel = formatPrice(candles[candles.length - 1].c, digits);
+  // The price axis grows to fit its longest label, so six-figure prices such
+  // as $108,420.15 stay inside the panel. Labels start 1rem in, and the tag
+  // keeps 0.5rem of padding on its right.
+  const textRem = (label: string, fontRem: number) => label.length * MONO_ADVANCE * fontRem;
+  const axisRem = Math.max(
+    AXIS_REM,
+    ...ticks.map((tick) => 1 + textRem(formatPrice(tick, digits), TICK_REM)),
+    1.5 + textRem(tagLabel, TAG_REM),
+  );
+  const plotWidth = Math.max(size.width - axisRem * rem, 10);
+  const plotHeight = Math.max(size.height - top - bottom, 10);
+  const { shapes, y } = layoutCandles(candles, plotWidth, plotHeight, slots);
   const times = timeTicks(candles);
   const last = candles[candles.length - 1];
   const lastUp = last.c >= candles[0].o;
@@ -102,7 +125,7 @@ function Plot({
               x={plotWidth + 1 * rem}
               y={ty + 0.45 * rem}
               fill="var(--muted)"
-              fontSize={1.25 * rem}
+              fontSize={TICK_REM * rem}
               fontFamily="var(--font-geist-mono)"
             >
               {formatPrice(tick, digits)}
@@ -183,7 +206,7 @@ function Plot({
       <rect
         x={plotWidth + 0.5 * rem}
         y={lastY - 1 * rem}
-        width={AXIS_REM * rem - 0.5 * rem}
+        width={(axisRem - 0.5) * rem}
         height={2 * rem}
         rx={0.4 * rem}
         fill={lastUp ? "var(--up)" : "var(--down)"}
@@ -192,11 +215,11 @@ function Plot({
         x={plotWidth + 1 * rem}
         y={lastY + 0.5 * rem}
         fill="var(--price-tag-text)"
-        fontSize={1.35 * rem}
+        fontSize={TAG_REM * rem}
         fontWeight={600}
         fontFamily="var(--font-geist-mono)"
       >
-        {formatPrice(last.c, digits)}
+        {tagLabel}
       </text>
     </svg>
   );
