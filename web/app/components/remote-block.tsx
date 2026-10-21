@@ -1,25 +1,26 @@
 "use client";
 
 import { QrCode } from "@/app/components/qr-code";
-
-interface Props {
-  code: string;
-  origin: string;
-}
+import { usePairing } from "@/app/lib/use-pairing-code";
 
 /**
- * R1, R2 — QR code + pairing code shown in the TV header.
- * Renders only when Redis is configured (checked server-side; hidden otherwise).
+ * R1, R2: QR code + pairing code in the TV header, next to the wordmark.
+ * Only rendered when Redis is configured (decided server-side in page.tsx).
+ * The text sits beside the QR code so the header doesn't grow taller.
  */
-export function RemoteBlock({ code, origin }: Props) {
-  const url = `${origin}/remote/${code}`;
+export function RemoteBlock() {
+  const pairing = usePairing();
+  if (!pairing) return null;
+  const url = `${pairing.origin}/remote/${pairing.code}`;
   return (
-    <div className="flex flex-col items-center gap-[0.5rem]">
-      <QrCode url={url} size={9} />
-      <div className="text-[1rem] font-mono text-muted tracking-widest">
-        {code}
+    <div className="flex items-center gap-[1.25rem]">
+      <div className="text-right">
+        <div className="text-[1.125rem] text-muted">Scan to control</div>
+        <div className="mt-[0.25rem] font-mono text-[1.5rem] tracking-[0.25em]">
+          {pairing.code}
+        </div>
       </div>
-      <div className="text-[0.85rem] text-muted">Scan to control</div>
+      <QrCode url={url} size={8.5} />
     </div>
   );
 }

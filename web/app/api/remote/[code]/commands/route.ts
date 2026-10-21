@@ -8,17 +8,16 @@ import {
 import { validateRemoteRequest } from "@/app/lib/validate-remote";
 import { isValidCode } from "@/app/lib/pairing-code";
 
-const UNAVAILABLE = Response.json(
-  { error: "remote_unavailable" },
-  { status: 503 },
-);
+// A fresh Response per request: a body can only be sent once.
+const unavailable = () =>
+  Response.json({ error: "remote_unavailable" }, { status: 503 });
 
 // R6 — POST /api/remote/[code]/commands
 export async function POST(
   req: NextRequest,
   ctx: RouteContext<"/api/remote/[code]/commands">,
 ) {
-  if (!isRedisAvailable()) return UNAVAILABLE;
+  if (!isRedisAvailable()) return unavailable();
 
   const { code } = await ctx.params;
 
@@ -49,7 +48,7 @@ export async function GET(
   req: NextRequest,
   ctx: RouteContext<"/api/remote/[code]/commands">,
 ) {
-  if (!isRedisAvailable()) return UNAVAILABLE;
+  if (!isRedisAvailable()) return unavailable();
 
   const { code } = await ctx.params;
   if (!isValidCode(code)) {

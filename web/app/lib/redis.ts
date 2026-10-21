@@ -1,5 +1,7 @@
 import "server-only";
 import { Redis } from "@upstash/redis";
+import type { RemoteCommand } from "./remote-commands";
+import { commandsAfter, type StoredCommand } from "./remote-entries";
 
 /**
  * Lazy Redis client — supports both Vercel KV env var names and the
@@ -54,62 +56,45 @@ export const MAX_COMMANDS = 50;
 export const RATE_LIMIT = 30;
 export const RATE_WINDOW = 60;
 
-export type StoredCommand = { id: number; command: object };
-
-/**
- * Append a command, refresh TTL, trim list.
- * Returns the stored entry with its auto-incremented id.
- * Throws if Redis is unavailable (caller should check `isRedisAvailable` first).
- */
-export async function appendCommand(
-  code: string,
-  command: object,
-): Promise<{ id: number; command: object }> {
-  const redis = getRedis()!;
-  const key = remoteKey(code);
-
-  // Use a pipeline so the three ops are sent in one round trip.
-  const pipeline = redis.pipeline();
-
-  // We store JSON strings in the list; id = list length after push.
-  const entry = { id: 0, command }; // placeholder id, replaced below
-  pipeline.rpush(key, JSON.stringify(entry));
-  pipeline.llen(key);
-  pipeline.expire(key, COMMAND_TTL);
-  const results = await pipeline.exec();
-  const len = results[1] as number;
-
-  // Overwrite placeholder id with the real sequence number.
-  const stored: { id: number; command: object } = { id: len, command };
-  // Rewrite last element with the correct id.
-  await redis.lset(key, len - 1, JSON.stringify(stored));
-
-  // Trim to last MAX_COMMANDS entries.
-  if (len > MAX_COMMANDS) {
-    await redis.ltrim(key, len - MAX_COMMANDS, -1);
-  }
-
-  return stored;
+/** Redis key for a pairing code's command-id counter. */
+export function sequenceKey(code: string): string {
+  return `remote:${code}:seq`;
 }
 
 /**
- * Return commands with id > afterId, at most 20 (R7).
+ * Append a command and return it with its id.
+ *
+ * Ids come from an atomic INCR counter, so they keep increasing after the
+ * list is trimmed and two concurrent POSTs can never get the same id. The
+ * entry is written once, and push + trim + both TTLs go in one round trip.
+ * Throws if Redis is unavailable (callers check `isRedisAvailable` first).
  */
+export async function appendCommand(
+  code: string,
+  command: RemoteCommand,
+): Promise<StoredCommand> {
+  const redis = getRedis()!;
+  const key = remoteKey(code);
+  const id = await redis.incr(sequenceKey(code));
+  const stored: StoredCommand = { id, command };
+
+  const pipeline = redis.pipeline();
+  pipeline.rpush(key, JSON.stringify(stored));
+  pipeline.ltrim(key, -MAX_COMMANDS, -1);
+  pipeline.expire(key, COMMAND_TTL);
+  pipeline.expire(sequenceKey(code), COMMAND_TTL);
+  await pipeline.exec();
+  return stored;
+}
+
+/** Commands with id > afterId, oldest first, at most 20 (R7). */
 export async function getCommandsAfter(
   code: string,
   afterId: number,
-): Promise<{ id: number; command: object }[]> {
+): Promise<StoredCommand[]> {
   const redis = getRedis()!;
-  const raw = await redis.lrange(remoteKey(code), 0, -1);
-  const all = (raw as string[]).map((s) => {
-    try {
-      return JSON.parse(s) as { id: number; command: object };
-    } catch {
-      return null;
-    }
-  }).filter(Boolean) as { id: number; command: object }[];
-
-  return all.filter((c) => c.id > afterId).slice(-20);
+  const raw = await redis.lrange<unknown>(remoteKey(code), 0, -1);
+  return commandsAfter(raw, afterId, 20);
 }
 
 /**

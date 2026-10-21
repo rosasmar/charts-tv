@@ -6,12 +6,12 @@ const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 6;
 const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
 
+// Uses the Web Crypto RNG (available in browsers and Node) rather than
+// Math.random. The tiny modulo bias over a 31-character alphabet doesn't
+// matter for a one-hour pairing code.
 export function generatePairingCode(): string {
-  const chars: string[] = [];
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    chars.push(ALPHABET[Math.floor(Math.random() * ALPHABET.length)]);
-  }
-  return chars.join("");
+  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH));
+  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
 }
 
 /** Returns true when `code` matches the pairing-code format (R1). */

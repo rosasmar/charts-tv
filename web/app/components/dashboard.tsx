@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { CandleChart } from "@/app/components/candle-chart";
 import { Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
-import { RemoteBlock } from "@/app/components/remote-block";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
 import { DEFAULT_ALERT_RULES } from "@/app/lib/alerts";
@@ -16,7 +15,7 @@ import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
-import { generatePairingCode } from "@/app/lib/pairing-code";
+import { usePairing } from "@/app/lib/use-pairing-code";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 import type { RemoteCommand } from "@/app/lib/remote-commands";
 
@@ -68,13 +67,8 @@ export function Dashboard({
   const [badge, setBadge] = useState<Badge>();
   const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // R1: pairing code is stable for the life of the page.
-  // Both are only needed on the client; the lazy initializer runs during hydration,
-  // not at prerender time, because <Dashboard> is wrapped in <Suspense> in page.tsx.
-  const [pairingCode] = useState(() => generatePairingCode());
-  const [origin] = useState(() =>
-    typeof window !== "undefined" ? window.location.origin : "",
-  );
+  // R1: the page's pairing code, shared with the QR code in the header.
+  const pairing = usePairing();
 
   // Any remote input holds rotation, and each press restarts the countdown.
   const holdRotation = () => {
@@ -156,8 +150,9 @@ export function Dashboard({
   );
 
   // R12 — handle remote commands.
-  const handleRemoteCommand = useCallback(
-    (cmd: RemoteCommand) => {
+  // A plain function, re-created each render so it always sees the current
+  // selection and rotation state; useRemoteCommands keeps the latest one.
+  const handleRemoteCommand = (cmd: RemoteCommand) => {
       switch (cmd.type) {
         case "select": {
           const idx = items.findIndex((it) => it.symbol === cmd.symbol);
@@ -165,7 +160,7 @@ export function Dashboard({
             holdRotation();
             setSelectedIndex(idx);
             setFocusedIndex(idx);
-            showBadge("next", `▶▶ ${cmd.symbol}`);
+            showBadge("next", cmd.symbol);
           }
           break;
         }
@@ -199,13 +194,10 @@ export function Dashboard({
           break;
         }
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items],
-  );
+  };
 
   useRemoteCommands(
-    remoteAvailable ? pairingCode : null,
+    remoteAvailable && pairing ? pairing.code : null,
     handleRemoteCommand,
   );
 
@@ -233,10 +225,6 @@ export function Dashboard({
             <div className="text-[1.25rem] text-muted">
               {rotating ? "Auto-rotating" : "Paused"}
             </div>
-            {/* R1, R2, R9 — QR block hidden when Redis isn't configured */}
-            {remoteAvailable && origin && (
-              <RemoteBlock code={pairingCode} origin={origin} />
-            )}
           </div>
         </div>
         <CandleChart
