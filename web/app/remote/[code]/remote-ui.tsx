@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { parseCommand } from "@/app/lib/remote-commands";
 import { isValidCode } from "@/app/lib/pairing-code";
+import { CandleButtons } from "./candle-buttons";
 
 type Status = "idle" | "sending" | "sent" | "error" | "not_understood" | "unreachable";
 
@@ -209,6 +210,7 @@ export function RemoteUI({ code }: { code: string }) {
           ▶▶ Next
         </button>
       </div>
+      <CandleButtons onSend={sendQuick} />
 
       {/* Example commands (R14) */}
       <div style={styles.examples}>

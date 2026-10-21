@@ -12,8 +12,8 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 |---|---|
 | **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
-| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
-| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. From the phone you can switch to **1-minute candles** for the last hour (crypto from Kraken, AMZN from the latest trading session), and the TV remembers the choice. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent", "1 minute candles" / "30 minute candles", or tap 1m / 30m), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
@@ -49,6 +49,7 @@ flowchart LR
   end
   web --> market["/api/market<br/>cached 1 min"] --> prices[(CoinGecko · Yahoo Finance)]
   web --> candles["/api/candles<br/>cached 5 min"] --> prices
+  web --> minute["/api/candles/1m<br/>cached 30 s"] --> minuteSources[(Kraken · Yahoo Finance)]
   web --> news --> feeds[(RSS feeds)]
   web --> wm --> bedrock[(Amazon Bedrock<br/>Claude)]
   wm --> news
@@ -79,6 +80,7 @@ Useful URL flags:
 | `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 15 s, and DOGE drops through a level 3% below at 30 s |
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
+| `?candles=1m` / `?candles=30m` | Show 1-minute or 30-minute candles, overriding the choice saved on the TV |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
 | `?news=amazon` | Only About Amazon headlines in the ticker |
 
@@ -120,7 +122,7 @@ The phone companion was implemented by **[Kiro Crew](https://kiro.dev/docs/crew/
 web/                 Next.js app (UI + API routes)
   app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, burn-in
   app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
-  app/api/           /api/market, /api/candles, /api/news, /api/whats-moving, /api/remote/[code]/commands
+  app/api/           /api/market, /api/candles, /api/candles/1m, /api/news, /api/whats-moving, /api/remote/[code]/commands
   app/remote/        the phone remote page (/remote/[code])
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)
 docs/

@@ -234,6 +234,46 @@ describe("parseCommand – price-level alerts", () => {
   });
 });
 
+describe("parseCommand – candle interval", () => {
+  it.each([
+    "1 minute candles",
+    "one minute candles",
+    "1m candles",
+    "1m",
+    "1-min candles",
+    "One-minute chart",
+    "switch to 1 minute candles",
+    "show me 1m candles please",
+  ])("%s → 1m", (text) => {
+    expect(parseCommand(text)).toEqual({ type: "candles", interval: "1m" });
+  });
+
+  it.each([
+    "30 minute candles",
+    "thirty minute candles",
+    "30m candles",
+    "30m",
+    "30-minute candlesticks",
+    "go back to 30 minute candles",
+  ])("%s → 30m", (text) => {
+    expect(parseCommand(text)).toEqual({ type: "candles", interval: "30m" });
+  });
+
+  it("leaves alerts, navigation and select alone", () => {
+    expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", pct: 5 });
+    expect(parseCommand("alert me if bitcoin drops 1 percent")).toMatchObject({ type: "alert", pct: 1 });
+    expect(parseCommand("alert me if amazon drops 30")).toMatchObject({ type: "alert", pct: 30 });
+    expect(parseCommand("alert me if btc hits 83700")).toMatchObject({ type: "priceAlert" });
+    expect(parseCommand("pause for 1 minute")).toEqual({ type: "pause" });
+    expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
+  });
+
+  it("needs a size", () => {
+    expect(parseCommand("candles")).toBeNull();
+    expect(parseCommand("5 minute candles")).toBeNull();
+  });
+});
+
 describe("parseCommand – alert without a direction", () => {
   it("fires either way", () => {
     expect(parseCommand("alert amazon 3%")).toEqual({ type: "alert", symbol: "AMZN", direction: undefined, pct: 3 });

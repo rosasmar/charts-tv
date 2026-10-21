@@ -17,8 +17,9 @@ export const MOCK_WATCHLIST: WatchlistItem[] = [
   { symbol: "DOGE", name: "Dogecoin", price: 0.2134, change24h: -3.05 },
 ];
 
-export function formatPrice(price: number): string {
-  const digits = price >= 1000 ? 2 : price >= 1 ? 2 : 4;
+// `minDigits` raises the decimal places, e.g. for finely spaced chart gridlines.
+export function formatPrice(price: number, minDigits = 0): string {
+  const digits = Math.max(price >= 1000 ? 2 : price >= 1 ? 2 : 4, minDigits);
   return price.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
