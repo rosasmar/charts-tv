@@ -13,8 +13,9 @@ import {
   describeRule,
   type AlertRule,
 } from "@/app/lib/alerts";
-import { withLivePrice } from "@/app/lib/candles";
+import { MINUTE_CANDLES, withLivePrice } from "@/app/lib/candles";
 import { useCandles } from "@/app/lib/use-candles";
+import { setCandleInterval, useCandleInterval } from "@/app/lib/use-candle-interval";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
 import { resolveSource, tradesAroundTheClock } from "@/app/lib/market";
@@ -47,7 +48,7 @@ const RING_MS = 4_000;
 /** How long the on-screen badge for a media or theme command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous" | "list" | "star" | ThemeSetting;
+type BadgeIcon = "play" | "pause" | "next" | "previous" | "list" | "star" | "candles" | ThemeSetting;
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -85,7 +86,9 @@ export function Dashboard({
     [demoRules, remoteAlertRules],
   );
   const { alert, push: pushAlert } = usePriceAlerts(items, alertRules);
-  const candles = useCandles(symbols);
+  // 30-minute or 1-minute candles, set from the phone and saved on the TV.
+  const candleInterval = useCandleInterval();
+  const candles = useCandles(symbols, candleInterval);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);
@@ -234,6 +237,10 @@ export function Dashboard({
         case "play":
           setRotationPaused(false);
           break;
+        case "candles":
+          setCandleInterval(cmd.interval);
+          showBadge("candles", cmd.interval === "1m" ? "1-min candles" : "30-min candles");
+          break;
         case "theme":
           setThemeSetting(cmd.theme);
           showBadge(cmd.theme, THEME_LABELS[cmd.theme]);
@@ -291,6 +298,13 @@ export function Dashboard({
   // zones, remembering the last focused tile) once the chart has controls
   // such as timeframes.
 
+  // Stocks only trade ~6.5 hours a day, so their windows count trading time.
+  const stock = !!selected && !tradesAroundTheClock(resolveSource(selected.symbol));
+  const caption =
+    candleInterval === "1m"
+      ? `1-min candles · ${stock ? "last trading hour" : "last hour"}`
+      : `30-min candles · ${stock ? "5 days" : "24 hours"}`;
+
   return (
     <main className="grid min-h-0 grid-cols-[1fr_34rem] gap-[2rem]">
       <AlertBanner alert={alert} />
@@ -314,16 +328,14 @@ export function Dashboard({
           </div>
         </div>
         <CandleChart
+          symbol={selected?.symbol ?? ""}
           candles={
             selected && candles[selected.symbol]
               ? withLivePrice(candles[selected.symbol], selected.price)
               : undefined
           }
-          caption={
-            selected && !tradesAroundTheClock(resolveSource(selected.symbol))
-              ? "30-min candles · 5 days"
-              : "30-min candles · 24 hours"
-          }
+          caption={caption}
+          slots={candleInterval === "1m" ? MINUTE_CANDLES : undefined}
         />
         <WhatsMovingPanel symbols={symbols} />
         {badge && (
@@ -379,6 +391,15 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
       <>
         <path d="M22 5l-10 7 10 7z" />
         <path d="M12 5L2 12l10 7z" />
+      </>
+    ),
+    // Two candlesticks: a body with a wick through it.
+    candles: (
+      <>
+        <rect x="7" y="2" width="2" height="18" rx="1" />
+        <rect x="4" y="6" width="8" height="10" rx="1.5" />
+        <rect x="17" y="5" width="2" height="17" rx="1" />
+        <rect x="14" y="9" width="8" height="8" rx="1.5" />
       </>
     ),
     // Sun, moon, and a half-filled circle for auto.

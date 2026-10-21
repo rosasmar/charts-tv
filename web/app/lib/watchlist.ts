@@ -29,8 +29,9 @@ export function pinFavorites<T extends { symbol: string }>(items: T[], favorites
   ];
 }
 
-export function formatPrice(price: number): string {
-  const digits = price >= 1000 ? 2 : price >= 1 ? 2 : 4;
+// `minDigits` raises the decimal places, e.g. for finely spaced chart gridlines.
+export function formatPrice(price: number, minDigits = 0): string {
+  const digits = Math.max(price >= 1000 ? 2 : price >= 1 ? 2 : 4, minDigits);
   return price.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",

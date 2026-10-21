@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { layoutCandles, priceTicks, type Candle } from "@/app/lib/candles";
+import { layoutCandles, priceTicks, tickDigits, type Candle } from "@/app/lib/candles";
 import { formatPrice } from "@/app/lib/watchlist";
 
 /** Width reserved on the right for price labels, in rem. */
@@ -11,11 +11,16 @@ const AXIS_REM = 9;
 // the TV, and every size in rem so it reads from across the room. The last
 // candle tracks the live price, marked with a dashed line and a price tag.
 export function CandleChart({
+  symbol,
   candles,
   caption,
+  slots,
 }: {
+  symbol: string;
   candles: Candle[] | undefined;
   caption: string;
+  /** Room for at least this many candles (see layoutCandles). */
+  slots?: number;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number; rem: number }>();
@@ -42,8 +47,9 @@ export function CandleChart({
         </div>
       ) : (
         size && (
-          // Remount (and so fade in again) when the symbol's data changes.
-          <Plot key={`${caption}-${candles[0].t}`} candles={candles} size={size} caption={caption} />
+          // Remount (and so fade in again) when the symbol or interval
+          // changes, but not on a refresh: 1-minute data moves every minute.
+          <Plot key={`${symbol}-${caption}`} candles={candles} size={size} caption={caption} slots={slots} />
         )
       )}
     </div>
@@ -54,18 +60,21 @@ function Plot({
   candles,
   size,
   caption,
+  slots,
 }: {
   candles: Candle[];
   size: { width: number; height: number; rem: number };
   caption: string;
+  slots?: number;
 }) {
   const { rem } = size;
   const top = 2.5 * rem;
   const bottom = 1 * rem;
   const plotWidth = Math.max(size.width - AXIS_REM * rem, 10);
   const plotHeight = Math.max(size.height - top - bottom, 10);
-  const { shapes, min, max, y } = layoutCandles(candles, plotWidth, plotHeight);
+  const { shapes, min, max, y } = layoutCandles(candles, plotWidth, plotHeight, slots);
   const ticks = priceTicks(min, max, 4);
+  const digits = tickDigits(ticks);
   const last = candles[candles.length - 1];
   const lastUp = last.c >= candles[0].o;
   const lastY = top + y(last.c);
@@ -94,7 +103,7 @@ function Plot({
               fontSize={1.25 * rem}
               fontFamily="var(--font-geist-mono)"
             >
-              {formatPrice(tick)}
+              {formatPrice(tick, digits)}
             </text>
           </g>
         );
@@ -139,7 +148,7 @@ function Plot({
         fontWeight={600}
         fontFamily="var(--font-geist-mono)"
       >
-        {formatPrice(last.c)}
+        {formatPrice(last.c, digits)}
       </text>
     </svg>
   );
