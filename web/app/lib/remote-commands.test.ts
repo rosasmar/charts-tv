@@ -259,6 +259,7 @@ describe("parseCommand – watchlist", () => {
     expect(parseCommand("watchlist AMZN NVDA BTC")).toEqual({
       type: "watchlist",
       symbols: ["AMZN", "NVDA", "BTC"],
+      favorites: [],
     });
   });
 
@@ -266,16 +267,16 @@ describe("parseCommand – watchlist", () => {
     expect(parseCommand("Watchlist: nvda, bitcoin,ethereum  NVDA")).toEqual({
       type: "watchlist",
       symbols: ["NVDA", "BTC", "ETH"],
+      favorites: [],
     });
   });
 
   it("keeps tickers that are also filler words", () => {
-    expect(parseCommand("watchlist A IT ME")).toEqual({ type: "watchlist", symbols: ["A", "IT", "ME"] });
+    expect(parseCommand("watchlist A IT ME")).toMatchObject({ symbols: ["A", "IT", "ME"] });
   });
 
   it("accepts index, class-share, coin-pair and future tickers", () => {
-    expect(parseCommand("watchlist ^GSPC BRK-B ADA-USD GC=F")).toEqual({
-      type: "watchlist",
+    expect(parseCommand("watchlist ^GSPC BRK-B ADA-USD GC=F")).toMatchObject({
       symbols: ["^GSPC", "BRK-B", "ADA-USD", "GC=F"],
     });
   });
@@ -286,7 +287,49 @@ describe("parseCommand – watchlist", () => {
     expect(parseCommand("watchlist AMZN not!a!ticker")).toBeNull();
   });
 
+  it("reads * as a favorite", () => {
+    expect(parseCommand("watchlist *BTC AMZN *hype NVDA *BTC")).toEqual({
+      type: "watchlist",
+      symbols: ["BTC", "AMZN", "HYPE", "NVDA"],
+      favorites: ["BTC", "HYPE"],
+    });
+    expect(parseCommand("watchlist *")).toBeNull();
+  });
+
   it("isn't confused by tickers that are command words", () => {
-    expect(parseCommand("watchlist STOP NEXT")).toEqual({ type: "watchlist", symbols: ["STOP", "NEXT"] });
+    expect(parseCommand("watchlist STOP NEXT")).toMatchObject({ type: "watchlist", symbols: ["STOP", "NEXT"] });
+  });
+});
+
+// ---- favorites ---------------------------------------------------------------
+
+describe("parseCommand – favorite", () => {
+  it.each([
+    ["favorite bitcoin", "BTC"],
+    ["favourite solana", "SOL"],
+    ["star ETH", "ETH"],
+    ["pin dogecoin", "DOGE"],
+    ["add amazon to favorites", "AMZN"],
+  ])("%s → pin %s", (text, symbol) => {
+    expect(parseCommand(text)).toEqual({ type: "favorite", symbol, on: true });
+  });
+
+  it.each([
+    ["unfavorite bitcoin", "BTC"],
+    ["unstar eth", "ETH"],
+    ["unpin hype", "HYPE"],
+    ["remove xrp from favorites", "XRP"],
+  ])("%s → unpin %s", (text, symbol) => {
+    expect(parseCommand(text)).toEqual({ type: "favorite", symbol, on: false });
+  });
+
+  it("needs a known symbol", () => {
+    expect(parseCommand("favorite foobar")).toBeNull();
+  });
+
+  it("leaves start, ping alerts and plain selects alone", () => {
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("ping me if bitcoin drops 5%")).toMatchObject({ type: "alert" });
+    expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
   });
 });

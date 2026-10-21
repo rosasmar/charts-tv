@@ -9,6 +9,7 @@ import {
   tradesAroundTheClock,
   type Quote,
 } from "./market";
+import { pinFavorites } from "./watchlist";
 
 describe("parseCoinGeckoPrices", () => {
   it("reads usd price and 24h change per coin id", () => {
@@ -129,5 +130,24 @@ describe("buildWatchlist", () => {
     const { items, live } = buildWatchlist(new Map(), fallback);
     expect(items.find((i) => i.symbol === "ETH")).toMatchObject({ price: 2400, change24h: 3 });
     expect(live).toEqual([]);
+  });
+});
+
+describe("pinFavorites", () => {
+  const items = ["AMZN", "BTC", "ETH", "SOL", "HYPE"].map((symbol) => ({ symbol }));
+
+  it("moves favorites to the top, keeping each group's order", () => {
+    expect(pinFavorites(items, ["HYPE", "BTC"]).map((i) => i.symbol)).toEqual([
+      "BTC",
+      "HYPE",
+      "AMZN",
+      "ETH",
+      "SOL",
+    ]);
+  });
+
+  it("leaves the list alone without favorites, and ignores unknown ones", () => {
+    expect(pinFavorites(items, [])).toBe(items);
+    expect(pinFavorites(items, ["NVDA"]).map((i) => i.symbol)).toEqual(items.map((i) => i.symbol));
   });
 });

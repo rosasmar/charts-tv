@@ -3,49 +3,60 @@
 import { useSyncExternalStore } from "react";
 import { parseSymbolList } from "./market";
 
-const STORAGE_KEY = "chartstv:watchlist";
+// Lists of symbols the viewer sets from the phone: their own board and their
+// favorites. They're kept in localStorage because pairing codes only last for
+// one page load, so the TV has to remember them itself. Storage can be
+// missing or throw (private mode, a full quota), so every access is guarded
+// and the board falls back to the default.
+function storedSymbols(key: string) {
+  let symbols: string[] | null | undefined;
+  const listeners = new Set<() => void>();
 
-// The viewer's own board, picked on the phone, or null for the default one.
-// It's kept in localStorage because pairing codes only last for one page
-// load, so the TV has to remember the list itself. Storage can be missing or
-// throw (private mode, a full quota), so every access is guarded and the
-// board falls back to the default.
-let symbols: string[] | null | undefined;
-const listeners = new Set<() => void>();
+  const read = (): string[] | null => {
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
+      return Array.isArray(stored) ? parseSymbolList(stored.join(",")) : null;
+    } catch {
+      return null;
+    }
+  };
+  const getSnapshot = () => {
+    if (symbols === undefined) symbols = read();
+    return symbols;
+  };
+  // The server has nothing stored, so it renders the defaults and the TV's
+  // own lists take over right after hydration.
+  const getServerSnapshot = () => null;
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
 
-function read(): string[] | null {
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-    return Array.isArray(stored) ? parseSymbolList(stored.join(",")) : null;
-  } catch {
-    return null;
-  }
+  const set = (next: string[]) => {
+    symbols = next.length ? next : null;
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // Still applies for this session.
+    }
+    listeners.forEach((listener) => listener());
+  };
+  const useSymbols = () => useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return { set, useSymbols };
 }
 
-function getSnapshot(): string[] | null {
-  if (symbols === undefined) symbols = read();
-  return symbols;
-}
+const watchlist = storedSymbols("chartstv:watchlist");
+const favorites = storedSymbols("chartstv:favorites");
+const NO_FAVORITES: string[] = [];
 
-// The server has no stored list, so it renders the default board and the
-// TV's own list takes over right after hydration.
-const getServerSnapshot = () => null;
+export const setWatchlistSymbols = watchlist.set;
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
+/** The viewer's own board, or null for the default one. */
+export const useWatchlistSymbols = watchlist.useSymbols;
 
-export function setWatchlistSymbols(next: string[]) {
-  symbols = next;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // Still applies for this session.
-  }
-  listeners.forEach((listener) => listener());
-}
+export const setFavorites = favorites.set;
 
-export function useWatchlistSymbols(): string[] | null {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+/** Symbols pinned to the top of the board. */
+export function useFavorites(): string[] {
+  return favorites.useSymbols() ?? NO_FAVORITES;
 }
