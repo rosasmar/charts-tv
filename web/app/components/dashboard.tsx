@@ -17,6 +17,8 @@ import { withLivePrice } from "@/app/lib/candles";
 import { useCandles } from "@/app/lib/use-candles";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
+import { resolveSource, tradesAroundTheClock } from "@/app/lib/market";
+import { setWatchlistSymbols, useWatchlistSymbols } from "@/app/lib/use-watchlist-symbols";
 import { formatChange, formatPrice } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
@@ -33,7 +35,7 @@ const RING_MS = 4_000;
 /** How long the on-screen badge for a media command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous";
+type BadgeIcon = "play" | "pause" | "next" | "previous" | "list";
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -51,7 +53,9 @@ export function Dashboard({
   /** R9: hide QR block when Redis isn't configured. */
   remoteAvailable?: boolean;
 }) {
-  const liveItems = useLiveMarket(sourceItems);
+  // The viewer's own list from the phone, or null for the default board.
+  const symbols = useWatchlistSymbols();
+  const liveItems = useLiveMarket(sourceItems, symbols);
   const { items, rules: demoRules } = useDemoPrices(liveItems);
 
   // R12 – remote-added alert rules accumulate here.
@@ -66,7 +70,7 @@ export function Dashboard({
     [demoRules, remoteAlertRules],
   );
   const { alert, push: pushAlert } = usePriceAlerts(items, alertRules);
-  const candles = useCandles();
+  const candles = useCandles(symbols);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);
@@ -182,6 +186,12 @@ export function Dashboard({
           }
           break;
         }
+        case "watchlist":
+          setWatchlistSymbols(cmd.symbols);
+          setSelectedIndex(0);
+          setFocusedIndex(0);
+          showBadge("list", `${cmd.symbols.length} on the board`);
+          break;
         case "next":
           step(1);
           break;
@@ -266,9 +276,13 @@ export function Dashboard({
               ? withLivePrice(candles[selected.symbol], selected.price)
               : undefined
           }
-          caption={selected?.symbol === "AMZN" ? "30-min candles · 5 days" : "30-min candles · 24 hours"}
+          caption={
+            selected && !tradesAroundTheClock(resolveSource(selected.symbol))
+              ? "30-min candles · 5 days"
+              : "30-min candles · 24 hours"
+          }
         />
-        <WhatsMovingPanel />
+        <WhatsMovingPanel symbols={symbols} />
         {badge && (
           <div
             key={badge.id}
@@ -321,6 +335,13 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
       <>
         <path d="M22 5l-10 7 10 7z" />
         <path d="M12 5L2 12l10 7z" />
+      </>
+    ),
+    list: (
+      <>
+        <rect x="3" y="4" width="18" height="4" rx="1" />
+        <rect x="3" y="10" width="18" height="4" rx="1" />
+        <rect x="3" y="16" width="18" height="4" rx="1" />
       </>
     ),
   };
