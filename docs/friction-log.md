@@ -182,8 +182,8 @@ These are the snags we hit while building TickerTV with the Amazon Vega SDK, the
   - Every model returns `403 … is not available for this account`.
   - The form fails in both places with `ValidationException: Your account is not authorized to perform this action. Please create a support case`.
   - `get-foundation-model-availability` reports `authorizationStatus: NOT_AUTHORIZED`.
-- **Workaround:** Opened a support case. The app falls back to a price summary until access arrives.
-- **Suggestion:** Let new paid accounts submit the use-case form, or say up front which accounts are restricted, why, and for how long.
+- **Workaround:** Opened a support case. Support replied: *"Please resubmit once your account has built successful spend and usage history"*, and said that these are the terms for a paid service. No timeline was given, which rules out using this account during a 5-day hackathon. The app falls back to a price summary, and we're pursuing a teammate's older AWS account.
+- **Suggestion:** Say in the Bedrock console *before* sign-up or upgrade that new accounts need spend and usage history for Anthropic models, roughly how much and how long, and return that reason in the API error instead of "not authorized". For developer events, offer an expedited path.
 
 ### 16. All daily token quotas are 0, so even Nova is throttled (High)
 - **Task:** Use an Amazon model (no use-case form) as a fallback.
