@@ -9,7 +9,8 @@ import type { WatchlistItem } from "./watchlist";
 const POLL_MS = 60_000;
 
 // Starts from the prices rendered into the page, then keeps them fresh by
-// polling /api/market. A failed poll keeps the last good prices on screen.
+// polling /api/market (or /api/market/custom for a picked list). A failed poll
+// keeps the last good prices on screen.
 // With a picked list (`symbols`), the board switches to it at once, reusing
 // any prices it already has; the rest show a dash until the fetch, which
 // starts immediately, comes back.
@@ -18,13 +19,15 @@ export function useLiveMarket(
   symbols: string[] | null,
 ): WatchlistItem[] {
   const [items, setItems] = useState(initial);
-  const query = symbols ? `?symbols=${encodeURIComponent(symbols.join(","))}` : "";
+  const url = symbols
+    ? `/api/market/custom?symbols=${encodeURIComponent(symbols.join(","))}`
+    : "/api/market";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch(`/api/market${query}`);
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: MarketData = await res.json();
         if (!cancelled && data.items.length) setItems(data.items);
@@ -38,7 +41,7 @@ export function useLiveMarket(
       cancelled = true;
       clearInterval(timer);
     };
-  }, [query]);
+  }, [url]);
 
   return useMemo(
     () =>
