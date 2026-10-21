@@ -11,12 +11,15 @@ type Props = {
   items: WatchlistItem[];
   focusedIndex: number;
   selectedSymbol: string;
+  /** True while the viewer is using the remote; shows the white focus ring. */
+  navigating: boolean;
 };
 
 // Right-hand column of tiles, one per symbol, sized to read from 10 feet.
 // A single highlight springs from tile to tile instead of each tile drawing
-// its own focus ring, so focus is obvious from across the room.
-export function Watchlist({ items, focusedIndex, selectedSymbol }: Props) {
+// its own focus ring, so focus is obvious from across the room. While the
+// board just rotates, only the glow shows; the white ring fades in on input.
+export function Watchlist({ items, focusedIndex, selectedSymbol, navigating }: Props) {
   const tileRefs = useRef<(HTMLLIElement | null)[]>([]);
   const [highlight, setHighlight] = useState<{ top: number; height: number }>();
 
@@ -55,7 +58,9 @@ export function Watchlist({ items, focusedIndex, selectedSymbol }: Props) {
         >
           <WatchlistTile
             item={item}
-            selected={item.symbol === selectedSymbol}
+            // When idle, the glow already marks the selected tile; the bar
+            // only matters while focus can sit on a different tile.
+            selected={item.symbol === selectedSymbol && (navigating || index !== focusedIndex)}
           />
         </li>
       ))}
@@ -63,7 +68,9 @@ export function Watchlist({ items, focusedIndex, selectedSymbol }: Props) {
         <li
           aria-hidden
           role="presentation"
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 rounded-[1.5rem] border-2 border-white/80 bg-white/[0.06] transition-[transform,height,box-shadow] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          className={`pointer-events-none absolute inset-x-0 top-0 z-10 rounded-[1.5rem] border-2 bg-white/[0.06] transition-[transform,height,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            navigating ? "border-white/80" : "border-transparent"
+          }`}
           style={{
             height: highlight.height,
             transform: `translateY(${highlight.top}px) scale(1.03)`,
