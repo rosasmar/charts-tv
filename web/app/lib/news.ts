@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife } from "next/cache";
-import { mixHeadlines, parseRss, type Headline } from "@/app/lib/rss";
+import { AMAZON_NEWS_SOURCE, mixHeadlines, parseRss, type Headline } from "@/app/lib/rss";
 
 type Feed = {
   source: string;
@@ -18,7 +18,7 @@ const FEEDS: Feed[] = [
     // The AMZN feed also carries unrelated market stories.
     match: /\b(amazon|amzn|aws)\b/i,
   },
-  { source: "About Amazon", url: "https://www.aboutamazon.com/news/rss" },
+  { source: AMAZON_NEWS_SOURCE, url: "https://www.aboutamazon.com/news/rss" },
 ];
 
 /** Headlines per source in the ticker. */

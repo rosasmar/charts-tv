@@ -1,3 +1,6 @@
+/** Source label for Amazon's own newsroom feed. */
+export const AMAZON_NEWS_SOURCE = "About Amazon";
+
 export type Headline = {
   id: string;
   title: string;

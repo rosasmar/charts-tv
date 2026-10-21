@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Headline } from "@/app/lib/rss";
+import { AMAZON_NEWS_SOURCE, type Headline } from "@/app/lib/rss";
 
 /** How often to pull fresh headlines (the route caches for ~10 minutes). */
 const REFRESH_MS = 10 * 60_000;
@@ -11,7 +11,8 @@ const SPEED_REM_PER_S = 6;
 // Bottom strip of headlines scrolling right-to-left in a seamless loop. The
 // list is rendered twice and the track slides by exactly one copy, so the
 // loop has no visible seam. Only a CSS transform animates, which stays smooth
-// on low-end TV hardware.
+// on low-end TV hardware. ?news=amazon shows only Amazon's own newsroom, e.g.
+// for recordings that shouldn't show third-party publication names.
 export function NewsTicker() {
   const [headlines, setHeadlines] = useState<Headline[]>([]);
   const [failed, setFailed] = useState(false);
@@ -27,7 +28,12 @@ export function NewsTicker() {
         const data: { headlines: Headline[] } = await res.json();
         if (cancelled) return;
         // Keep showing the last good list if a refresh comes back empty.
-        if (data.headlines.length) setHeadlines(data.headlines);
+        const amazonOnly =
+          new URLSearchParams(window.location.search).get("news") === "amazon";
+        const shown = amazonOnly
+          ? data.headlines.filter((h) => h.source === AMAZON_NEWS_SOURCE)
+          : data.headlines;
+        if (shown.length) setHeadlines(shown);
         setFailed(false);
       } catch (error) {
         console.error(`[news] failed to load headlines: ${error}`);
