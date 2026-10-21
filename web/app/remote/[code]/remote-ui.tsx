@@ -118,14 +118,14 @@ export function RemoteUI({ code }: { code: string }) {
 
   if (!validCode) {
     return (
-      <div style={styles.page}>
+      <div style={styles.page} data-phone-remote>
         <div style={styles.error}>Invalid remote code.</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} data-phone-remote>
       <h1 style={styles.title}>ChartsTV Remote</h1>
       <div style={styles.codeLabel}>
         Code: <span style={styles.code}>{code}</span>
