@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { layoutCandles, priceTicks, tickDigits, type Candle } from "@/app/lib/candles";
+import { layoutCandles, priceTicks, tickDigits, timeTicks, type Candle } from "@/app/lib/candles";
 import { formatPrice } from "@/app/lib/watchlist";
 
 /** Width reserved on the right for price labels, in rem. */
@@ -69,12 +69,14 @@ function Plot({
 }) {
   const { rem } = size;
   const top = 2.5 * rem;
-  const bottom = 1 * rem;
+  // Room for the time labels under the candles.
+  const bottom = 2.75 * rem;
   const plotWidth = Math.max(size.width - AXIS_REM * rem, 10);
   const plotHeight = Math.max(size.height - top - bottom, 10);
   const { shapes, min, max, y } = layoutCandles(candles, plotWidth, plotHeight, slots);
   const ticks = priceTicks(min, max, 4);
   const digits = tickDigits(ticks);
+  const times = timeTicks(candles);
   const last = candles[candles.length - 1];
   const lastUp = last.c >= candles[0].o;
   const lastY = top + y(last.c);
@@ -106,6 +108,26 @@ function Plot({
               {formatPrice(tick, digits)}
             </text>
           </g>
+        );
+      })}
+
+      {times.map(({ index, label }) => {
+        const shape = shapes[index];
+        const tx = shape.x + shape.width / 2;
+        // Skip labels that would hang off either edge of the plot.
+        if (tx < 1.5 * rem || tx > plotWidth - 1.5 * rem) return null;
+        return (
+          <text
+            key={`${index}-${label}`}
+            x={tx}
+            y={top + plotHeight + 2 * rem}
+            textAnchor="middle"
+            fill="var(--muted)"
+            fontSize={1.15 * rem}
+            fontFamily="var(--font-geist-mono)"
+          >
+            {label}
+          </text>
         );
       })}
 
