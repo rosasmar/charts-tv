@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
+import { DEFAULT_ALERT_RULES } from "@/app/lib/alerts";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
+import { useLiveMarket } from "@/app/lib/use-live-market";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 
@@ -32,8 +34,13 @@ export function Dashboard({
 }: {
   items: WatchlistItem[];
 }) {
-  const items = useDemoPrices(sourceItems);
-  const alert = usePriceAlerts(items);
+  const liveItems = useLiveMarket(sourceItems);
+  const { items, rules: demoRules } = useDemoPrices(liveItems);
+  const alertRules = useMemo(
+    () => (demoRules.length ? [...DEFAULT_ALERT_RULES, ...demoRules] : DEFAULT_ALERT_RULES),
+    [demoRules],
+  );
+  const alert = usePriceAlerts(items, alertRules);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [held, setHeld] = useState(false);

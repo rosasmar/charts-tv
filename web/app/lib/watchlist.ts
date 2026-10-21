@@ -6,11 +6,8 @@ export type WatchlistItem = {
   change24h: number;
 };
 
-// TODO: Replace with live data from the market data feed (CoinGecko /
-// DexScreener) once it lands. Keep the WatchlistItem shape or update the
-// layout components that consume it.
-// TODO: AMZN needs a stock price source; CoinGecko and DexScreener are
-// crypto-only. Stocks also only move during market hours.
+// Fallback prices, used only when a live quote isn't available (e.g. the very
+// first build without network). Live prices come from lib/market-data.ts.
 export const MOCK_WATCHLIST: WatchlistItem[] = [
   { symbol: "AMZN", name: "Amazon", price: 228.5, change24h: 1.84 },
   { symbol: "BTC", name: "Bitcoin", price: 108_420.15, change24h: 2.41 },
