@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { Watchlist } from "@/app/components/watchlist";
+import { WhatsMovingPanel } from "@/app/components/whats-moving";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
@@ -147,6 +148,7 @@ export function Dashboard({
         <div className="flex flex-1 items-center justify-center text-[1.5rem] text-muted">
           Chart
         </div>
+        <WhatsMovingPanel />
         {badge && (
           <div
             key={badge.id}
