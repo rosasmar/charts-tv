@@ -1,4 +1,5 @@
 import { WATCHLIST_SOURCES } from "./market";
+import type { ThemeSetting } from "./theme";
 
 export type RemoteCommand =
   | { type: "select"; symbol: string }
@@ -6,6 +7,7 @@ export type RemoteCommand =
   | { type: "previous" }
   | { type: "pause" }
   | { type: "play" }
+  | { type: "theme"; theme: ThemeSetting }
   /** A percentage move alert; without a direction it fires either way. */
   | { type: "alert"; symbol: string; direction?: "up" | "down"; pct: number }
   /** A price-level alert; without a direction ("hits") the TV picks it from the current price. */
@@ -108,6 +110,23 @@ function parseAlert(norm: string): RemoteCommand | null {
   return { type: "priceAlert", symbol, price: value, direction };
 }
 
+const THEME_RE = /\b(light|day|dark|night|auto(?:matic)?)\s+(?:mode|theme)\b/;
+
+/**
+ * "light mode" / "day mode" → light, "dark mode" / "night mode" → dark,
+ * "auto mode" / "auto theme" → auto. "turn off dark mode" means light.
+ */
+function parseTheme(norm: string): RemoteCommand | null {
+  const match = norm.match(THEME_RE);
+  if (!match) return null;
+  const word = match[1];
+  const theme: ThemeSetting =
+    word === "light" || word === "day" ? "light" : word === "dark" || word === "night" ? "dark" : "auto";
+  if (!/\b(?:off|disable)\b/.test(norm)) return { type: "theme", theme };
+  if (theme === "auto") return null; // "auto mode off" doesn't say which theme.
+  return { type: "theme", theme: theme === "light" ? "dark" : "light" };
+}
+
 /**
  * Pure function: turns free text into a RemoteCommand or null.
  * R3 / R4 – case insensitive, filler words ignored.
@@ -120,6 +139,10 @@ export function parseCommand(text: string): RemoteCommand | null {
   // --- alerts come first: phrases like "falls back to 100" or "stops at
   // 80k" must not be read as navigation commands. ---
   if (ALERT_VERB.test(norm)) return parseAlert(norm);
+
+  // --- theme, before play and select: "start dark mode" and "switch to
+  // light mode" are about the theme. ---
+  if (THEME_RE.test(norm)) return parseTheme(norm);
 
   // --- pause / stop / freeze ---
   if (/\b(pause|stop|freeze)\b/.test(norm)) return { type: "pause" };

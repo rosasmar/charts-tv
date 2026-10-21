@@ -21,6 +21,8 @@ import { formatChange, formatPrice } from "@/app/lib/watchlist";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
 import { useRemoteCommands } from "@/app/lib/use-remote-commands";
 import { usePairing } from "@/app/lib/use-pairing-code";
+import { setThemeSetting } from "@/app/lib/use-theme";
+import { THEME_LABELS, type ThemeSetting } from "@/app/lib/theme";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 import type { RemoteCommand } from "@/app/lib/remote-commands";
 
@@ -28,12 +30,12 @@ import type { RemoteCommand } from "@/app/lib/remote-commands";
 const ROTATE_MS = 10_000;
 /** Remote use pauses rotation; it resumes after this much idle time. */
 const RESUME_AFTER_MS = 30_000;
-/** The white focus ring fades out this long after the last remote press. */
+/** The focus ring fades out this long after the last remote press. */
 const RING_MS = 4_000;
-/** How long the on-screen badge for a media command stays up. */
+/** How long the on-screen badge for a media or theme command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous";
+type BadgeIcon = "play" | "pause" | "next" | "previous" | ThemeSetting;
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -194,6 +196,10 @@ export function Dashboard({
         case "play":
           setRotationPaused(false);
           break;
+        case "theme":
+          setThemeSetting(cmd.theme);
+          showBadge(cmd.theme, THEME_LABELS[cmd.theme]);
+          break;
         case "alert":
         case "priceAlert": {
           const item = items.find((it) => it.symbol === cmd.symbol);
@@ -273,7 +279,7 @@ export function Dashboard({
           <div
             key={badge.id}
             role="status"
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-white/15 bg-black/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight"
+            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[1.25rem] rounded-[1.5rem] border border-highlight/15 bg-background/85 px-[3rem] py-[1.5rem] text-[3.5rem] font-semibold tracking-tight"
           >
             <BadgeGlyph icon={badge.icon} />
             {badge.text}
@@ -284,7 +290,7 @@ export function Dashboard({
             // Restart the countdown bar each time the symbol changes.
             key={`${selectedIndex}-${held}`}
             aria-hidden
-            className="rotate-progress absolute inset-x-0 bottom-0 h-[0.25rem] bg-white/40"
+            className="rotate-progress absolute inset-x-0 bottom-0 h-[0.25rem] bg-highlight/40"
             style={{ animationDuration: `${ROTATE_MS}ms` }}
           />
         )}
@@ -321,6 +327,25 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
       <>
         <path d="M22 5l-10 7 10 7z" />
         <path d="M12 5L2 12l10 7z" />
+      </>
+    ),
+    // Sun, moon, and a half-filled circle for auto.
+    light: (
+      <>
+        <circle cx="12" cy="12" r="4.5" />
+        <path
+          d="M12 1.5V4M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.75 1.75M17.65 17.65l1.75 1.75M4.6 19.4l1.75-1.75M17.65 6.35l1.75-1.75"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+    dark: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+    auto: (
+      <>
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 3a9 9 0 0 0 0 18z" />
       </>
     ),
   };

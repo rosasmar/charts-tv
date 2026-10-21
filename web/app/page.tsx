@@ -4,6 +4,7 @@ import { Dashboard } from "@/app/components/dashboard";
 import { NewsTicker } from "@/app/components/news-ticker";
 import { NightDim } from "@/app/components/night-dim";
 import { RemoteBlock } from "@/app/components/remote-block";
+import { Theme } from "@/app/components/theme";
 import { getMarketData } from "@/app/lib/market-data";
 import { isRedisAvailable } from "@/app/lib/redis";
 
@@ -13,6 +14,8 @@ export default async function Home() {
   const remoteAvailable = isRedisAvailable();
   return (
     <BurnInShift className="grid h-screen grid-rows-[auto_1fr_auto] gap-[2rem] p-[3rem]">
+      {/* First, so a saved light theme is set before anything paints. */}
+      <Theme />
       <header className="flex items-start justify-between">
         <Clock />
         <div className="flex items-start gap-[2.5rem]">

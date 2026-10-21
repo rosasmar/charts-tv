@@ -86,7 +86,7 @@ function Plot({
         const ty = top + y(tick);
         return (
           <g key={tick}>
-            <line x1={0} x2={plotWidth} y1={ty} y2={ty} stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+            <line x1={0} x2={plotWidth} y1={ty} y2={ty} stroke="var(--chart-grid)" strokeWidth={1} />
             <text
               x={plotWidth + 1 * rem}
               y={ty + 0.45 * rem}
@@ -134,7 +134,7 @@ function Plot({
       <text
         x={plotWidth + 1 * rem}
         y={lastY + 0.5 * rem}
-        fill="#000"
+        fill="var(--price-tag-text)"
         fontSize={1.35 * rem}
         fontWeight={600}
         fontFamily="var(--font-geist-mono)"
