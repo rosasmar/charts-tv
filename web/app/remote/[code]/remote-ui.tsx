@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { parseCommand } from "@/app/lib/remote-commands";
 import { isValidCode } from "@/app/lib/pairing-code";
+import { WatchlistPicker } from "./watchlist-picker";
 import { BackgroundSection } from "./background-section";
 
 type Status = "idle" | "sending" | "sent" | "error" | "not_understood" | "unreachable";
@@ -34,17 +35,19 @@ export function RemoteUI({ code }: { code: string }) {
 
   const validCode = isValidCode(code);
 
+  // Resolves to true when the TV's queue accepted the command.
   const sendText = useCallback(
-    async (value: string) => {
-      if (!value.trim() || !validCode) return;
+    async (value: string): Promise<boolean> => {
+      if (!value.trim() || !validCode) return false;
       // R5 – parse on phone before sending.
       const parsed = parseCommand(value);
       if (!parsed) {
         setStatus("not_understood");
         setTimeout(() => setStatus("idle"), 3000);
-        return;
+        return false;
       }
       setStatus("sending");
+      let accepted = false;
       try {
         const res = await fetch(`/api/remote/${code}/commands`, {
           method: "POST",
@@ -54,6 +57,7 @@ export function RemoteUI({ code }: { code: string }) {
         if (res.status === 201) {
           setStatus("sent");
           setText("");
+          accepted = true;
         } else if (res.status === 422) {
           setStatus("not_understood");
         } else if (res.status === 503) {
@@ -65,6 +69,7 @@ export function RemoteUI({ code }: { code: string }) {
         setStatus("unreachable");
       }
       setTimeout(() => setStatus("idle"), 3000);
+      return accepted;
     },
     [code, validCode],
   );
@@ -119,14 +124,14 @@ export function RemoteUI({ code }: { code: string }) {
 
   if (!validCode) {
     return (
-      <div style={styles.page}>
+      <div style={styles.page} data-phone-remote>
         <div style={styles.error}>Invalid remote code.</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} data-phone-remote>
       <h1 style={styles.title}>ChartsTV Remote</h1>
       <div style={styles.codeLabel}>
         Code: <span style={styles.code}>{code}</span>
@@ -211,6 +216,7 @@ export function RemoteUI({ code }: { code: string }) {
         </button>
       </div>
 
+      <WatchlistPicker send={sendText} />
       <BackgroundSection code={code} />
 
       {/* Example commands (R14) */}

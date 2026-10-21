@@ -14,7 +14,7 @@ describe("summarizeFromPrices", () => {
     const summary = summarizeFromPrices([item("BTC", 2.4), item("SOL", 5.7), item("DOGE", -3.1)]);
     expect(summary).toEqual({
       headline: "SOL leads, DOGE lags",
-      points: ["SOL +5.70% at $10.00", "DOGE -3.10% at $10.00", "2 up, 1 down, 0 flat"],
+      points: ["SOL +5.70% at $10.00", "DOGE -3.10% at $10.00"],
       source: "prices",
     });
   });
@@ -29,7 +29,7 @@ describe("summarizeFromPrices", () => {
   it("calls small moves flat", () => {
     const summary = summarizeFromPrices([item("A", 0.2), item("B", -0.3)]);
     expect(summary.headline).toBe("A quiet board");
-    expect(summary.points[2]).toBe("0 up, 0 down, 2 flat");
+    expect(summary.points).toEqual(["A +0.20% at $10.00", "B -0.30% at $10.00"]);
   });
 
   it("handles an empty or single-item watchlist", () => {

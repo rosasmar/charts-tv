@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { resolveSource } from "./market";
 import type { MarketData } from "./market-data";
 import type { WatchlistItem } from "./watchlist";
 
@@ -8,15 +9,25 @@ import type { WatchlistItem } from "./watchlist";
 const POLL_MS = 60_000;
 
 // Starts from the prices rendered into the page, then keeps them fresh by
-// polling /api/market. A failed poll keeps the last good prices on screen.
-export function useLiveMarket(initial: WatchlistItem[]): WatchlistItem[] {
+// polling /api/market (or /api/market/custom for a picked list). A failed poll
+// keeps the last good prices on screen.
+// With a picked list (`symbols`), the board switches to it at once, reusing
+// any prices it already has; the rest show a dash until the fetch, which
+// starts immediately, comes back.
+export function useLiveMarket(
+  initial: WatchlistItem[],
+  symbols: string[] | null,
+): WatchlistItem[] {
   const [items, setItems] = useState(initial);
+  const url = symbols
+    ? `/api/market/custom?symbols=${encodeURIComponent(symbols.join(","))}`
+    : "/api/market";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/api/market");
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: MarketData = await res.json();
         if (!cancelled && data.items.length) setItems(data.items);
@@ -30,7 +41,21 @@ export function useLiveMarket(initial: WatchlistItem[]): WatchlistItem[] {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [url]);
 
-  return items;
+  return useMemo(
+    () =>
+      symbols
+        ? symbols.map(
+            (symbol) =>
+              items.find((i) => i.symbol === symbol) ?? {
+                symbol,
+                name: resolveSource(symbol).name,
+                price: 0,
+                change24h: 0,
+              },
+          )
+        : items,
+    [items, symbols],
+  );
 }

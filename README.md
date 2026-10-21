@@ -12,13 +12,15 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 |---|---|
 | **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
-| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for AMZN. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
+| **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for stocks. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
 | **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Custom background** | From the phone remote, pick a photo to replace the black background and set how strongly it shows. The panels turn translucent, and denser as the photo gets stronger, so text stays readable from across the room. Night dim still covers it, and the photo stays on the TV, not the server (see [Phone companion](#phone-companion-optional)). |
+| **Pick your watchlist** | From the phone remote, search for any US stock, ETF, index or coin, build a list of up to 10 and send it to the TV. The TV remembers it across restarts, and lists of 8–10 switch to compact tiles so they still fit. "Reset" goes back to the default board. |
+| **Favorites** | Star symbols in the phone's watchlist, or say "favorite bitcoin" / "unpin bitcoin", and they're pinned to the top of the board with a gold star. The TV remembers them across restarts. |
 | **Auto-rotation** | Left alone, the chart panel advances every 10 s with a countdown bar. Using the remote pauses it, and it resumes after 30 s idle. |
 | **Media buttons + Alexa** | Play/Pause stops or starts rotation, and fast-forward and rewind skip coins, with a large on-screen badge. The same actions are registered with the Media Session API, which Alexa voice commands use. |
 | **Price alerts** | Full-width green or red banner with a synthesized chime. Alerts fire once per crossing of a price level or a big daily move (3% for AMZN, 5–8% for crypto). |
-| **Live prices** | AMZN plus five major coins, refreshed every minute: crypto from CoinGecko, AMZN from Yahoo Finance. Fetched server-side and shared by every TV, and any provider can fail without leaving gaps on the board. |
+| **Live prices** | By default AMZN plus six major coins, refreshed every minute: those coins from CoinGecko, stocks and anything else picked on the phone from Yahoo Finance. Fetched server-side and shared by every TV showing the same symbols, and any provider can fail without leaving gaps on the board. |
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
@@ -149,7 +151,7 @@ docs/
 
 ## Known limitations
 
-- **AMZN comes from Yahoo Finance's unofficial chart endpoint.** It needs no key, but it isn't a published API. If it fails, AMZN keeps its last value. Crypto prices come from CoinGecko's free public API.
+- **Stocks come from Yahoo Finance's unofficial chart endpoint**, and the phone's symbol search from its search endpoint. They need no key, but they aren't published APIs. If a quote fails, that symbol keeps its last value. The default board's coins come from CoinGecko's free public API.
 - **Alexa voice is untested.** The Vega Virtual Device can't inject voice commands. The remote's media buttons are tested; the voice path relies on the documented Media Session integration.
 - **The screensaver still starts after 5 minutes without remote input** on a real Fire TV. We couldn't find a supported way for a non-video app to keep the screen awake; details are in `docs/friction-log.md` (entries 12–13).
 - **Bedrock access depends on the AWS account.** AWS support told us our new account needs spend and usage history before it can use Anthropic models (friction-log entries 14–17). The panel falls back to a price summary until it runs on an account with access.

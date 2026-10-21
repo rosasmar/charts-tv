@@ -3,9 +3,13 @@ import {
   WATCHLIST_SOURCES,
   buildWatchlist,
   parseCoinGeckoPrices,
+  parseSymbolList,
   parseYahooQuote,
+  resolveSource,
+  tradesAroundTheClock,
   type Quote,
 } from "./market";
+import { pinFavorites } from "./watchlist";
 
 describe("parseCoinGeckoPrices", () => {
   it("reads usd price and 24h change per coin id", () => {
@@ -51,6 +55,47 @@ describe("parseYahooQuote", () => {
     expect(parseYahooQuote({ chart: { result: null, error: { code: "Not Found" } } })).toBeUndefined();
     expect(parseYahooQuote(chart({}))).toBeUndefined();
   });
+
+  it("reads the short name and tidies its padding", () => {
+    expect(
+      parseYahooQuote(chart({ regularMarketPrice: 221.5, shortName: "NVIDIA CORP.     R" }))?.name,
+    ).toBe("NVIDIA CORP. R");
+    expect(parseYahooQuote(chart({ regularMarketPrice: 1, longName: "Apple Inc." }))?.name).toBe(
+      "Apple Inc.",
+    );
+  });
+});
+
+describe("parseSymbolList", () => {
+  it("uppercases, dedupes and drops invalid symbols", () => {
+    expect(parseSymbolList("amzn, nvda,BTC,amzn,not a ticker")).toEqual(["AMZN", "NVDA", "BTC"]);
+    expect(parseSymbolList("^GSPC,BRK-B,ADA-USD,GC=F")).toEqual(["^GSPC", "BRK-B", "ADA-USD", "GC=F"]);
+  });
+
+  it("caps the list at 10", () => {
+    const many = Array.from({ length: 12 }, (_, i) => `S${i}`).join(",");
+    expect(parseSymbolList(many)).toHaveLength(10);
+  });
+
+  it("returns null for nothing usable, meaning the default board", () => {
+    expect(parseSymbolList(null)).toBeNull();
+    expect(parseSymbolList("")).toBeNull();
+    expect(parseSymbolList("!!,  ,")).toBeNull();
+  });
+});
+
+describe("resolveSource", () => {
+  it("keeps default-board coins on CoinGecko and sends the rest to Yahoo", () => {
+    expect(resolveSource("BTC")).toMatchObject({ provider: "coingecko", id: "bitcoin" });
+    expect(resolveSource("NVDA")).toEqual({ symbol: "NVDA", name: "NVDA", provider: "yahoo", id: "NVDA" });
+  });
+
+  it("knows which symbols trade around the clock", () => {
+    expect(tradesAroundTheClock(resolveSource("ETH"))).toBe(true);
+    expect(tradesAroundTheClock(resolveSource("ADA-USD"))).toBe(true);
+    expect(tradesAroundTheClock(resolveSource("AMZN"))).toBe(false);
+    expect(tradesAroundTheClock(resolveSource("NVDA"))).toBe(false);
+  });
 });
 
 describe("buildWatchlist", () => {
@@ -65,10 +110,44 @@ describe("buildWatchlist", () => {
     expect(live).toEqual(["AMZN", "BTC"]);
   });
 
+  it("builds a picked list in its own order, naming new symbols from their quote", () => {
+    const quotes = new Map<string, Quote>([
+      ["NVDA", { price: 221.5, change24h: 1.2, name: "NVIDIA Corporation" }],
+      ["AMZN", { price: 262, change24h: -0.5, name: "Amazon.com, Inc." }],
+    ]);
+    const sources = ["NVDA", "AMZN", "TSLA"].map(resolveSource);
+    const { items, live } = buildWatchlist(quotes, [], sources);
+    expect(items).toEqual([
+      { symbol: "NVDA", name: "NVIDIA Corporation", price: 221.5, change24h: 1.2 },
+      { symbol: "AMZN", name: "Amazon", price: 262, change24h: -0.5 },
+      { symbol: "TSLA", name: "TSLA", price: 0, change24h: 0 },
+    ]);
+    expect(live).toEqual(["NVDA", "AMZN"]);
+  });
+
   it("falls back to the previous value for symbols without a quote", () => {
     const fallback = [{ symbol: "ETH", name: "Ethereum", price: 2400, change24h: 3 }];
     const { items, live } = buildWatchlist(new Map(), fallback);
     expect(items.find((i) => i.symbol === "ETH")).toMatchObject({ price: 2400, change24h: 3 });
     expect(live).toEqual([]);
+  });
+});
+
+describe("pinFavorites", () => {
+  const items = ["AMZN", "BTC", "ETH", "SOL", "HYPE"].map((symbol) => ({ symbol }));
+
+  it("moves favorites to the top, keeping each group's order", () => {
+    expect(pinFavorites(items, ["HYPE", "BTC"]).map((i) => i.symbol)).toEqual([
+      "BTC",
+      "HYPE",
+      "AMZN",
+      "ETH",
+      "SOL",
+    ]);
+  });
+
+  it("leaves the list alone without favorites, and ignores unknown ones", () => {
+    expect(pinFavorites(items, [])).toBe(items);
+    expect(pinFavorites(items, ["NVDA"]).map((i) => i.symbol)).toEqual(items.map((i) => i.symbol));
   });
 });
