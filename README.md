@@ -10,10 +10,10 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 
 | | What it does |
 |---|---|
-| **Always-on layout** | Pure black screen with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
+| **Always-on layout** | Pure black screen (or a light theme, see below) with a large clock and date, a chart panel, a watchlist column and a news strip. Everything is sized in rem tied to the viewport, so it reads the same from 10 ft on any TV. |
 | **D-pad focus system** | Remote navigation runs on app state instead of the WebView's spatial navigation. One highlight springs from tile to tile with a green or red glow. Up and Down move it, and OK puts a coin in the chart panel. |
 | **Candlestick chart** | The chart panel shows 30-minute candles for the selected symbol: 24 hours for crypto, 5 trading days for stocks. It's drawn as plain SVG, sized for 10 ft, with round-number gridlines and a dashed live-price line that tracks the watchlist price. |
-| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
+| **Phone companion** | The TV shows a QR code and pairing code. Scanning it opens a phone remote where you **type or speak** commands ("show solana", "pause", "light mode", "alert me if bitcoin drops 5 percent"), and the TV reacts within seconds. Built with **Kiro Crew** (see below). |
 | **Custom background** | From the phone remote, pick a photo to replace the black background and set how strongly it shows. The panels turn translucent, and denser as the photo gets stronger, so text stays readable from across the room. Night dim still covers it, and the photo stays on the TV, not the server (see [Phone companion](#phone-companion-optional)). |
 | **Pick your watchlist** | From the phone remote, search for any US stock, ETF, index or coin, build a list of up to 10 and send it to the TV. The TV remembers it across restarts, and lists of 8–10 switch to compact tiles so they still fit. "Reset" goes back to the default board. |
 | **Favorites** | Star symbols in the phone's watchlist, or say "favorite bitcoin" / "unpin bitcoin", and they're pinned to the top of the board with a gold star. The TV remembers them across restarts. |
@@ -24,6 +24,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | **Live news ticker** | Headlines from About Amazon, Yahoo Finance (Amazon stories), CoinDesk and Cointelegraph. Cached server-side for 10 minutes and scrolled smoothly with a CSS transform. |
 | **What's moving (Bedrock)** | A short market summary written by **Claude on Amazon Bedrock**, grounded only in the board and the headlines. It falls back to a plain price summary if Bedrock is unavailable. |
 | **Night dim** | From 22:00 to 07:00 the screen dims to about 45%. Alerts stay at full brightness above the dim layer. |
+| **Light mode** | An off-white theme for bright rooms, with darker greens and reds that keep their contrast. Pick Dark (the default), Light or Auto (light by day, dark from 22:00 to 07:00) with the phone's Display buttons or by saying "light mode" / "day mode", "dark mode" / "night mode" or "auto mode". The TV remembers the choice across reloads. |
 | **Burn-in protection** | The whole layout drifts 6 px to a new position every 2 minutes, cycling through 9 positions. |
 
 ### Remote controls
@@ -85,7 +86,7 @@ flowchart LR
 cd web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest: alerts, RSS parsing, what's-moving, night dim, pixel shift
+npm test         # vitest: alerts, RSS parsing, what's-moving, night dim, theme, pixel shift
 npm run lint
 npm run build
 ```
@@ -97,6 +98,7 @@ Useful URL flags:
 | `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 15 s, and DOGE drops through a level 3% below at 30 s |
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
+| `?theme=light` / `?theme=dark` / `?theme=auto` | Use this theme for the page load, over the one saved from the phone |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
 | `?news=amazon` | Only About Amazon headlines in the ticker |
 
@@ -138,8 +140,8 @@ The phone companion was implemented by **[Kiro Crew](https://kiro.dev/docs/crew/
 
 ```
 web/                 Next.js app (UI + API routes)
-  app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, burn-in
-  app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, pixel-shift)
+  app/components/    clock, dashboard, watchlist, candle chart, alert banner, news ticker, what's moving, night dim, theme, burn-in
+  app/lib/           pure logic + tests (market, candles, alerts, rss, whats-moving, dpad, night-dim, theme, pixel-shift)
   app/api/           /api/market, /api/candles, /api/news, /api/whats-moving, /api/remote/[code]/commands and /background
   app/remote/        the phone remote page (/remote/[code])
 vega/                Vega WebView wrapper for Fire TV (see vega/README.md)

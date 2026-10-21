@@ -10,7 +10,8 @@ interface Props {
 
 /**
  * R2 — renders a QR code as inline SVG using the `qrcode` npm package.
- * No network call. White modules on black background with quiet zone.
+ * No network call. White modules on black with a quiet zone, recolored for
+ * the theme by the qr-code class in globals.css.
  */
 export function QrCode({ url, size = 9 }: Props) {
   const [svgString, setSvgString] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function QrCode({ url, size = 9 }: Props) {
   return (
     <div
       aria-label={`QR code for ${url}`}
+      className="qr-code"
       style={{ width: `${size}rem`, height: `${size}rem` }}
       // dangerouslySetInnerHTML is safe: the SVG is produced locally by
       // the qrcode library, never from user input or a network fetch.

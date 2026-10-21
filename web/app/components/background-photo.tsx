@@ -8,8 +8,8 @@ import { useBackground } from "@/app/lib/use-background";
 // the screen by 1rem so the drift never uncovers an edge. While a photo is
 // set, <html data-background> turns the panels translucent (see globals.css),
 // and --background-opacity makes them denser as the photo gets stronger. A
-// dark scrim behind the header keeps the clock readable. Opacity and a
-// gradient are cheap on TV GPUs, unlike a backdrop blur.
+// scrim behind the header (dark, or light in the light theme) keeps the clock
+// readable. Opacity and a gradient are cheap on TV GPUs, unlike a backdrop blur.
 export function BackgroundPhoto() {
   const background = useBackground();
   const photo = background?.photo;
@@ -38,7 +38,13 @@ export function BackgroundPhoto() {
         className="h-full w-full object-cover transition-opacity duration-700"
         style={{ opacity: opacity / 100 }}
       />
-      <div className="absolute inset-x-0 top-0 h-[35%] bg-linear-to-b from-black/80 via-black/70 via-55% to-transparent" />
+      <div
+        className="absolute inset-x-0 top-0 h-[35%]"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgb(var(--scrim) / 0.8), rgb(var(--scrim) / 0.7) 55%, transparent)",
+        }}
+      />
     </div>
   );
 }

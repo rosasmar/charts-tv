@@ -252,6 +252,46 @@ describe("parseCommand – alert without a direction", () => {
   });
 });
 
+describe("parseCommand – theme", () => {
+  it("light mode / day mode → light", () => {
+    expect(parseCommand("light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("Day mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("light theme please")).toEqual({ type: "theme", theme: "light" });
+  });
+
+  it("dark mode / night mode → dark", () => {
+    expect(parseCommand("dark mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("night mode")).toEqual({ type: "theme", theme: "dark" });
+  });
+
+  it("auto mode / auto theme → auto", () => {
+    expect(parseCommand("auto mode")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("auto theme")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("automatic theme")).toEqual({ type: "theme", theme: "auto" });
+  });
+
+  it("isn't mistaken for play or select", () => {
+    expect(parseCommand("start dark mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("switch to light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("turn on day mode")).toEqual({ type: "theme", theme: "light" });
+  });
+
+  it("turning a theme off picks the other one", () => {
+    expect(parseCommand("turn off dark mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("disable light mode")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("turn auto mode off")).toBeNull();
+  });
+
+  it("leaves other commands alone", () => {
+    expect(parseCommand("stop")).toEqual({ type: "pause" });
+    expect(parseCommand("start")).toEqual({ type: "play" });
+    expect(parseCommand("show bitcoin")).toEqual({ type: "select", symbol: "BTC" });
+    expect(parseCommand("dark")).toBeNull();
+  });
+});
+
+// ---- background ---------------------------------------------------------------
+
 describe("parseCommand – background", () => {
   it("background opacity 40% → backgroundOpacity 40", () => {
     expect(parseCommand("background opacity 40%")).toEqual({ type: "backgroundOpacity", pct: 40 });

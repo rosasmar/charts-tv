@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { parseCommand } from "@/app/lib/remote-commands";
 import { isValidCode } from "@/app/lib/pairing-code";
+import { ThemeButtons } from "./theme-buttons";
 import { WatchlistPicker } from "./watchlist-picker";
 import { BackgroundSection } from "./background-section";
 
@@ -215,6 +216,7 @@ export function RemoteUI({ code }: { code: string }) {
           ▶▶ Next
         </button>
       </div>
+      <ThemeButtons onSend={sendQuick} />
 
       <WatchlistPicker send={sendText} />
       <BackgroundSection code={code} />

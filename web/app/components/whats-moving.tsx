@@ -38,7 +38,7 @@ export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
 
   if (!summary) return null;
   return (
-    <div className="rounded-[1.25rem] border border-panel-border bg-black/40 px-[1.75rem] py-[1rem]">
+    <div className="rounded-[1.25rem] border border-panel-border bg-background/40 px-[1.75rem] py-[1rem]">
       <div className="flex items-baseline gap-[1.25rem]">
         <span className="shrink-0 text-[1.125rem] font-semibold uppercase tracking-[0.2em] text-muted">
           What&apos;s moving

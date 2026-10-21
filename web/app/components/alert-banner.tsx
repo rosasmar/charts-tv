@@ -14,10 +14,10 @@ export function AlertBanner({ alert }: { alert: PriceAlert | undefined }) {
       role="alert"
       className={`alert-enter fixed inset-x-[3rem] top-[2rem] z-50 flex items-center gap-[2rem] rounded-[1.75rem] border-2 px-[3rem] py-[1.75rem] ${
         info
-          ? "border-white/40 bg-[#111111] shadow-[0_0_4rem_-1rem_rgba(255,255,255,0.4)]"
+          ? "border-highlight/40 bg-alert-info shadow-[0_0_4rem_-1rem_var(--alert-info-glow)]"
           : up
-            ? "border-up bg-[#06210f] shadow-[0_0_4rem_-1rem_var(--up)]"
-            : "border-down bg-[#2a0808] shadow-[0_0_4rem_-1rem_var(--down)]"
+            ? "border-up bg-alert-up shadow-[0_0_4rem_-1rem_var(--up)]"
+            : "border-down bg-alert-down shadow-[0_0_4rem_-1rem_var(--down)]"
       }`}
     >
       <svg

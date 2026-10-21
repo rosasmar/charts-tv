@@ -13,7 +13,7 @@ type Props = {
   favorites: string[];
   focusedIndex: number;
   selectedSymbol: string;
-  /** True while the viewer is using the remote; shows the white focus ring. */
+  /** True while the viewer is using the remote; shows the focus ring. */
   navigating: boolean;
 };
 
@@ -23,7 +23,7 @@ const FULL_SIZE_TILES = 7;
 // Right-hand column of tiles, one per symbol, sized to read from 10 feet.
 // A single highlight springs from tile to tile instead of each tile drawing
 // its own focus ring, so focus is obvious from across the room. While the
-// board just rotates, only the glow shows; the white ring fades in on input.
+// board just rotates, only the glow shows; the ring fades in on input.
 export function Watchlist({ items, favorites, focusedIndex, selectedSymbol, navigating }: Props) {
   const tileRefs = useRef<(HTMLLIElement | null)[]>([]);
   const [highlight, setHighlight] = useState<{ top: number; height: number }>();
@@ -76,8 +76,8 @@ export function Watchlist({ items, favorites, focusedIndex, selectedSymbol, navi
         <li
           aria-hidden
           role="presentation"
-          className={`pointer-events-none absolute inset-x-0 top-0 z-10 rounded-[1.5rem] border-2 bg-white/[0.06] transition-[transform,height,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-            navigating ? "border-white/80" : "border-transparent"
+          className={`pointer-events-none absolute inset-x-0 top-0 z-10 rounded-[1.5rem] border-2 bg-highlight/[0.06] transition-[transform,height,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            navigating ? "border-highlight/80" : "border-transparent"
           }`}
           style={{
             height: highlight.height,
@@ -133,7 +133,7 @@ function WatchlistTile({
       {selected && (
         <div
           aria-hidden
-          className="absolute inset-y-[1.25rem] left-0 w-[0.375rem] rounded-r-full bg-white"
+          className="absolute inset-y-[1.25rem] left-0 w-[0.375rem] rounded-r-full bg-highlight"
         />
       )}
       <div className="min-w-0">
