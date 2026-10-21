@@ -433,6 +433,16 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
     ),
     star: <path d={STAR_PATH} />,
     neon: <path d="M13.5 1.5L3.5 13.5h7.5l-1.5 9 10-12h-7.5z" />,
+    // A tea leaf with its center vein cut out, on a short stem.
+    matcha: (
+      <>
+        <path
+          fillRule="evenodd"
+          d="M21 3C11 3 5 8.5 5 15c0 1.6.4 3 1.1 4.2 1.2.8 2.7 1.3 4.4 1.3C17.4 20.5 21 14.6 21 3zM7.6 17.6l9.5-11 .9.8-9.5 11z"
+        />
+        <path d="M3.5 21l3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </>
+    ),
   };
   return (
     <svg

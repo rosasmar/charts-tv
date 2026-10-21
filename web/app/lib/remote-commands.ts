@@ -135,7 +135,7 @@ function parseAlert(norm: string): RemoteCommand | null {
 }
 
 const THEME_RE =
-  /\b(?:(light|day|dark|night|auto(?:matic)?|neon)\s+(?:mode|theme)|(neon)\s+lights?)\b/;
+  /\b(?:(light|day|dark|night|auto(?:matic)?|neon|matcha)\s+(?:mode|theme)|(neon)\s+lights?)\b/;
 
 const THEME_WORDS: Record<string, ThemeSetting> = {
   light: "light",
@@ -145,13 +145,14 @@ const THEME_WORDS: Record<string, ThemeSetting> = {
   auto: "auto",
   automatic: "auto",
   neon: "neon",
+  matcha: "matcha",
 };
 
 /**
  * "light mode" / "day mode" → light, "dark mode" / "night mode" → dark,
- * "auto mode" / "auto theme" → auto, "neon mode" / "neon lights" → neon.
- * "turn off dark mode" means light and vice versa; turning neon off goes back
- * to dark, the default.
+ * "auto mode" / "auto theme" → auto, "neon mode" / "neon lights" → neon,
+ * "matcha mode" / "matcha theme" → matcha. "turn off dark mode" means light
+ * and vice versa; turning neon or matcha off goes back to dark, the default.
  */
 function parseTheme(norm: string): RemoteCommand | null {
   const match = norm.match(THEME_RE);

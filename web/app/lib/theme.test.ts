@@ -15,26 +15,30 @@ describe("readThemeOverride", () => {
     expect(readThemeOverride("?demo=1&theme=auto")).toBe("auto");
     expect(readThemeOverride("?theme=dark")).toBe("dark");
     expect(readThemeOverride("?theme=neon")).toBe("neon");
+    expect(readThemeOverride("?theme=matcha")).toBe("matcha");
     expect(readThemeOverride("?theme=sepia")).toBeNull();
     expect(readThemeOverride("")).toBeNull();
   });
 });
 
 describe("parseThemeSetting", () => {
-  it("accepts only the four settings", () => {
+  it("accepts only the five settings", () => {
     expect(parseThemeSetting("light")).toBe("light");
     expect(parseThemeSetting("neon")).toBe("neon");
+    expect(parseThemeSetting("matcha")).toBe("matcha");
     expect(parseThemeSetting(null)).toBeNull();
     expect(parseThemeSetting("Light")).toBeNull();
   });
 });
 
 describe("resolveTheme", () => {
-  it("keeps dark, light and neon as they are", () => {
+  it("keeps dark, light, neon and matcha as they are", () => {
     expect(resolveTheme("dark", at(12))).toBe("dark");
     expect(resolveTheme("light", at(23))).toBe("light");
     expect(resolveTheme("neon", at(12))).toBe("neon");
     expect(resolveTheme("neon", at(23))).toBe("neon");
+    expect(resolveTheme("matcha", at(12))).toBe("matcha");
+    expect(resolveTheme("matcha", at(23))).toBe("matcha");
   });
 
   it("auto is light by day and dark from 22:00 to 07:00", () => {
@@ -74,6 +78,7 @@ describe("THEME_SCRIPT", () => {
     expect(runScript("", "light", at(12))).toBe("light");
     expect(runScript("", "dark", at(12))).toBe("dark");
     expect(runScript("", "neon", at(23))).toBe("neon");
+    expect(runScript("", "matcha", at(23))).toBe("matcha");
     expect(runScript("", "sepia", at(12))).toBeUndefined();
     expect(runScript("", null, at(12))).toBeUndefined();
   });
@@ -81,6 +86,7 @@ describe("THEME_SCRIPT", () => {
   it("lets ?theme= override the saved theme", () => {
     expect(runScript("?theme=dark", "light", at(12))).toBe("dark");
     expect(runScript("?theme=neon", "light", at(12))).toBe("neon");
+    expect(runScript("?theme=matcha", "neon", at(12))).toBe("matcha");
     expect(runScript("?theme=nope", "light", at(12))).toBe("light");
   });
 

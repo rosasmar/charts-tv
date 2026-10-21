@@ -5,13 +5,14 @@ const THEMES = [
   { label: "Light", command: "light mode" },
   { label: "Auto", command: "auto mode" },
   { label: "Neon", command: "neon mode" },
+  { label: "Matcha", command: "matcha mode" },
 ];
 
 /**
  * "Display" section of the phone remote: picks the TV's theme by sending the
  * same text commands a viewer could type. Auto is light by day and dark from
- * 22:00 to 07:00; neon is just for fun. The TV remembers the choice across
- * reloads.
+ * 22:00 to 07:00; neon and matcha are just for fun. The TV remembers the
+ * choice across reloads.
  */
 // TODO: Highlight the TV's current theme here once the TV can report its
 // state back to the phone (commands only flow phone → TV today).
@@ -40,8 +41,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#8a8a8a",
     marginBottom: "0.5rem",
   },
+  // Five buttons fit one row on a typical phone; very narrow ones wrap.
   row: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "0.5rem",
   },
   btn: {
@@ -52,7 +55,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#f5f5f5",
     cursor: "pointer",
     fontSize: "1rem",
-    padding: "0.75rem 1rem",
+    padding: "0.75rem 0.5rem",
     touchAction: "manipulation",
   },
 };
