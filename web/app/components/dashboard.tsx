@@ -281,6 +281,7 @@ export function Dashboard({
         items={items}
         focusedIndex={focusedIndex}
         selectedSymbol={selected?.symbol ?? ""}
+        navigating={held}
       />
     </main>
   );
