@@ -1,6 +1,6 @@
 # Friction log
 
-These are the snags we hit while building TickerTV with the Amazon Vega SDK, the Vega Virtual Device (VVD) and Amazon Bedrock. Each entry follows the hackathon's format: task, steps, expected vs actual, severity, workaround and suggestion. [`feedback.md`](feedback.md) refers to entries by number.
+These are the snags we hit while building ChartsTV with the Amazon Vega SDK, the Vega Virtual Device (VVD) and Amazon Bedrock. Each entry follows the hackathon's format: task, steps, expected vs actual, severity, workaround and suggestion. [`feedback.md`](feedback.md) refers to entries by number.
 
 **Environment:** MacBook Pro M1, macOS Sonoma 14.6.1, Node 24, Homebrew 7.0.9, Vega SDK 0.24.12112, Vega CLI 1.4.5, AWS CLI 2.38, Oct 19–21, 2026.
 

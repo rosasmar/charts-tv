@@ -150,7 +150,7 @@ export function Dashboard({
     },
     {
       playing: rotating,
-      title: selected ? `${selected.symbol} · ${selected.name}` : "TickerTV",
+      title: selected ? `${selected.symbol} · ${selected.name}` : "ChartsTV",
     },
   );
 

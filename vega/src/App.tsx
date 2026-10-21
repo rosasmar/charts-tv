@@ -17,7 +17,7 @@ import {
 // The production deployment of web/ on Vercel. Append URL flags such as
 // ?demo=1 or ?news=amazon for recordings (see the main README).
 // For D-pad debugging, use 'file:///pkg/assets/keytest.html' instead.
-const APP_URL = 'https://tickertv.vercel.app';
+const APP_URL = 'https://chartstv.vercel.app';
 
 // The page's own console output doesn't reach the device log, so forward it
 // (and uncaught errors) to this wrapper, which logs it with a [web] prefix.

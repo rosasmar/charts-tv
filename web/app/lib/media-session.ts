@@ -57,7 +57,7 @@ export function useMediaSession(
     if ("MediaMetadata" in window) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title,
-        artist: "TickerTV",
+        artist: "ChartsTV",
       });
     }
   }, [playing, title]);

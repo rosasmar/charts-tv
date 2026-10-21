@@ -23,7 +23,7 @@ The URL the WebView loads is `APP_URL` in `src/App.tsx`.
 vega virtual-device start            # boots in about 25 seconds
 npm install
 npm run build:debug
-vega run-app build/aarch64-debug/tickertv_aarch64.vpkg com.chartstv.tickertv.main -d VirtualDevice
+vega run-app build/aarch64-debug/chartstv_aarch64.vpkg com.chartstv.chartstv.main -d VirtualDevice
 ```
 
 If you're on an Intel Mac, use the `x86_64` build instead.

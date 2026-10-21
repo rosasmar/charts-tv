@@ -9,7 +9,7 @@ import {
 } from "./market";
 import type { WatchlistItem } from "./watchlist";
 
-const USER_AGENT = "TickerTV/1.0 (+https://github.com/rosasmar/charts-tv)";
+const USER_AGENT = "ChartsTV/1.0 (+https://github.com/rosasmar/charts-tv)";
 
 async function getJson(url: string): Promise<unknown> {
   const res = await fetch(url, {

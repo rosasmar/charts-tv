@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TickerTV",
+  title: "ChartsTV",
   description: "An always-on crypto trading screen for your TV.",
 };
 

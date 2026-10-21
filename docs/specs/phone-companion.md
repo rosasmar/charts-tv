@@ -4,7 +4,7 @@
 
 ## Goal
 
-Let a viewer control TickerTV from their phone. The TV shows a QR code. Scanning it opens a page on the phone where the viewer **types or speaks** commands such as "show Solana", "pause" or "alert me if bitcoin drops 5 percent", and **the TV reacts within seconds**.
+Let a viewer control ChartsTV from their phone. The TV shows a QR code. Scanning it opens a page on the phone where the viewer **types or speaks** commands such as "show Solana", "pause" or "alert me if bitcoin drops 5 percent", and **the TV reacts within seconds**.
 
 This adds touch and free-form voice to the existing D-pad, media-button and visual interactions. That combination of voice, D-pad and visuals in one flow is the multi-modal experience the Fire TV judges reward.
 

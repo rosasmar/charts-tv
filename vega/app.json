@@ -1,5 +1,5 @@
 {
   "//": "The declared app name must follow this pattern to be KRL-compatible",
-  "name": "com.chartstv.tickertv.main",
-  "displayName": "TickerTV"
+  "name": "com.chartstv.chartstv.main",
+  "displayName": "ChartsTV"
 }

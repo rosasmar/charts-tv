@@ -3,7 +3,7 @@ import { cacheLife } from "next/cache";
 import { parseCoinGeckoOhlc, parseYahooCandles, type Candle } from "./candles";
 import { WATCHLIST_SOURCES } from "./market";
 
-const USER_AGENT = "TickerTV/1.0 (+https://github.com/rosasmar/charts-tv)";
+const USER_AGENT = "ChartsTV/1.0 (+https://github.com/rosasmar/charts-tv)";
 
 async function fetchCandles(source: (typeof WATCHLIST_SOURCES)[number]): Promise<Candle[]> {
   // Crypto: 30-minute candles over the last day. Stocks: 30-minute candles
