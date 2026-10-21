@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertBanner } from "@/app/components/alert-banner";
 import { CandleChart } from "@/app/components/candle-chart";
 import { Watchlist } from "@/app/components/watchlist";
 import { WhatsMovingPanel } from "@/app/components/whats-moving";
+import { RemoteBlock } from "@/app/components/remote-block";
 import { useDpad } from "@/app/lib/dpad";
 import { useMediaSession } from "@/app/lib/media-session";
 import { DEFAULT_ALERT_RULES } from "@/app/lib/alerts";
+import type { AlertRule } from "@/app/lib/alerts";
 import { withLivePrice } from "@/app/lib/candles";
 import { useCandles } from "@/app/lib/use-candles";
 import { useDemoPrices } from "@/app/lib/use-demo-prices";
 import { useLiveMarket } from "@/app/lib/use-live-market";
 import { usePriceAlerts } from "@/app/lib/use-price-alerts";
+import { useRemoteCommands } from "@/app/lib/use-remote-commands";
+import { generatePairingCode } from "@/app/lib/pairing-code";
 import type { WatchlistItem } from "@/app/lib/watchlist";
+import type { RemoteCommand } from "@/app/lib/remote-commands";
 
 /** How long each symbol stays in the chart panel while auto-rotating. */
 const ROTATE_MS = 10_000;
@@ -22,7 +27,7 @@ const RESUME_AFTER_MS = 30_000;
 /** How long the on-screen badge for a media command stays up. */
 const BADGE_MS = 1_500;
 
-type BadgeIcon = "play" | "pause" | "next" | "previous";
+type BadgeIcon = "play" | "pause" | "next" | "previous" | "bell";
 type Badge = { icon: BadgeIcon; text: string; id: number };
 
 // The chart panel and watchlist, driven by the remote. Focus lives in state
@@ -34,14 +39,25 @@ type Badge = { icon: BadgeIcon; text: string; id: number };
 // fast-forward / rewind skip to the next or previous symbol.
 export function Dashboard({
   items: sourceItems,
+  remoteAvailable = false,
 }: {
   items: WatchlistItem[];
+  /** R9: hide QR block when Redis isn't configured. */
+  remoteAvailable?: boolean;
 }) {
   const liveItems = useLiveMarket(sourceItems);
   const { items, rules: demoRules } = useDemoPrices(liveItems);
+
+  // R12 – remote-added alert rules accumulate here.
+  const [remoteAlertRules, setRemoteAlertRules] = useState<AlertRule[]>([]);
+
   const alertRules = useMemo(
-    () => (demoRules.length ? [...DEFAULT_ALERT_RULES, ...demoRules] : DEFAULT_ALERT_RULES),
-    [demoRules],
+    () => [
+      ...DEFAULT_ALERT_RULES,
+      ...(demoRules.length ? demoRules : []),
+      ...remoteAlertRules,
+    ],
+    [demoRules, remoteAlertRules],
   );
   const alert = usePriceAlerts(items, alertRules);
   const candles = useCandles();
@@ -51,6 +67,14 @@ export function Dashboard({
   const [paused, setPaused] = useState(false);
   const [badge, setBadge] = useState<Badge>();
   const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // R1: pairing code is stable for the life of the page.
+  // Both are only needed on the client; the lazy initializer runs during hydration,
+  // not at prerender time, because <Dashboard> is wrapped in <Suspense> in page.tsx.
+  const [pairingCode] = useState(() => generatePairingCode());
+  const [origin] = useState(() =>
+    typeof window !== "undefined" ? window.location.origin : "",
+  );
 
   // Any remote input holds rotation, and each press restarts the countdown.
   const holdRotation = () => {
@@ -130,6 +154,61 @@ export function Dashboard({
       title: selected ? `${selected.symbol} · ${selected.name}` : "TickerTV",
     },
   );
+
+  // R12 — handle remote commands.
+  const handleRemoteCommand = useCallback(
+    (cmd: RemoteCommand) => {
+      switch (cmd.type) {
+        case "select": {
+          const idx = items.findIndex((it) => it.symbol === cmd.symbol);
+          if (idx !== -1) {
+            holdRotation();
+            setSelectedIndex(idx);
+            setFocusedIndex(idx);
+            showBadge("next", `▶▶ ${cmd.symbol}`);
+          }
+          break;
+        }
+        case "next":
+          step(1);
+          break;
+        case "previous":
+          step(-1);
+          break;
+        case "pause":
+          setRotationPaused(true);
+          break;
+        case "play":
+          setRotationPaused(false);
+          break;
+        case "alert": {
+          const newRule: AlertRule = {
+            symbol: cmd.symbol,
+            kind: "move",
+            pct: cmd.pct,
+          };
+          setRemoteAlertRules((prev) => {
+            // Deduplicate: replace existing rule for same symbol/pct.
+            const filtered = prev.filter(
+              (r) =>
+                !(r.kind === "move" && r.symbol === cmd.symbol && r.pct === cmd.pct),
+            );
+            return [...filtered, newRule];
+          });
+          showBadge("bell", `${cmd.symbol} ±${cmd.pct}%`);
+          break;
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items],
+  );
+
+  useRemoteCommands(
+    remoteAvailable ? pairingCode : null,
+    handleRemoteCommand,
+  );
+
   // TODO: Give the chart panel its own focus zone (Left/Right to move between
   // zones, remembering the last focused tile) once the chart has controls
   // such as timeframes.
@@ -150,8 +229,14 @@ export function Dashboard({
               </span>
             </div>
           )}
-          <div className="text-[1.25rem] text-muted">
-            {rotating ? "Auto-rotating" : "Paused"}
+          <div className="flex items-center gap-[2rem]">
+            <div className="text-[1.25rem] text-muted">
+              {rotating ? "Auto-rotating" : "Paused"}
+            </div>
+            {/* R1, R2, R9 — QR block hidden when Redis isn't configured */}
+            {remoteAvailable && origin && (
+              <RemoteBlock code={pairingCode} origin={origin} />
+            )}
           </div>
         </div>
         <CandleChart
@@ -196,7 +281,7 @@ export function Dashboard({
 // Drawn as SVG rather than ▶ / ❚❚ characters, which the TV's fonts may not
 // have (Geist renders ❚ as a box).
 function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
-  const shapes = {
+  const shapes: Record<BadgeIcon, React.ReactNode> = {
     play: <path d="M7 4l14 8-14 8z" />,
     pause: (
       <>
@@ -215,6 +300,10 @@ function BadgeGlyph({ icon }: { icon: BadgeIcon }) {
         <path d="M22 5l-10 7 10 7z" />
         <path d="M12 5L2 12l10 7z" />
       </>
+    ),
+    // R12: bell drawn as SVG, not an emoji (spec says not emoji).
+    bell: (
+      <path d="M12 2a7 7 0 0 1 7 7v3.586l1.707 1.707A1 1 0 0 1 20 16H4a1 1 0 0 1-.707-1.707L5 12.586V9a7 7 0 0 1 7-7zm0 18a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2z" />
     ),
   };
   return (
