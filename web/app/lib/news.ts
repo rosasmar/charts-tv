@@ -27,7 +27,7 @@ const PER_SOURCE = 4;
 async function fetchFeed(feed: Feed): Promise<Headline[]> {
   try {
     const res = await fetch(feed.url, {
-      headers: { "User-Agent": "TickerTV/1.0 (+https://github.com/jarrensj/charts-tv)" },
+      headers: { "User-Agent": "TickerTV/1.0 (+https://github.com/rosasmar/charts-tv)" },
       signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return [];
