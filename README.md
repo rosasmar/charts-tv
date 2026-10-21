@@ -76,7 +76,7 @@ Useful URL flags:
 
 | Flag | Effect |
 |---|---|
-| `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 6 s, and DOGE drops through a level 3% below at 22 s |
+| `?demo=1` | Scripted price moves for demos, relative to live prices: AMZN breaks the next $5 level at 15 s, and DOGE drops through a level 3% below at 30 s |
 | `?sound=0` | Mute the alert chime |
 | `?dim=on` / `?dim=off` | Force night dim on or off (otherwise 22:00–07:00 local time) |
 | `?shift=fast` | Burn-in drift every 3 s instead of every 2 minutes |
