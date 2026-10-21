@@ -38,6 +38,7 @@ import { setThemeSetting } from "@/app/lib/use-theme";
 import { THEME_LABELS, type ThemeSetting } from "@/app/lib/theme";
 import type { WatchlistItem } from "@/app/lib/watchlist";
 import type { RemoteCommand } from "@/app/lib/remote-commands";
+import { REMOTE_ACTIVITY_EVENT } from "@/app/components/remote-block";
 
 /** How long each symbol stays in the chart panel while auto-rotating. */
 const ROTATE_MS = 10_000;
@@ -193,6 +194,8 @@ export function Dashboard({
   // A plain function, re-created each render so it always sees the current
   // selection and rotation state; useRemoteCommands keeps the latest one.
   const handleRemoteCommand = (cmd: RemoteCommand) => {
+      // Keeps the QR code up while the phone is in use.
+      window.dispatchEvent(new Event(REMOTE_ACTIVITY_EVENT));
       switch (cmd.type) {
         case "select": {
           const idx = items.findIndex((it) => it.symbol === cmd.symbol);
