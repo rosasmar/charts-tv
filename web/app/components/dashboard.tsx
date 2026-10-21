@@ -240,6 +240,7 @@ export function Dashboard({
         case "candles":
           setCandleInterval(cmd.interval);
           showBadge("candles", cmd.interval === "1m" ? "1-min candles" : "30-min candles");
+          break;
         case "theme":
           setThemeSetting(cmd.theme);
           showBadge(cmd.theme, THEME_LABELS[cmd.theme]);
