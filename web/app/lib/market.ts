@@ -124,3 +124,20 @@ export function buildWatchlist(
   });
   return { items, live };
 }
+
+// A refresh can come back with placeholder prices when a provider is rate
+// limited (`live` lists the symbols that got a real quote). The TV keeps the
+// price it already shows for those symbols instead of jumping to a
+// placeholder; a symbol it has never priced takes the new value.
+export function mergeLive(
+  previous: WatchlistItem[],
+  next: WatchlistItem[],
+  live: string[],
+): WatchlistItem[] {
+  const isLive = new Set(live);
+  return next.map((item) => {
+    if (isLive.has(item.symbol)) return item;
+    const old = previous.find((p) => p.symbol === item.symbol && p.price > 0);
+    return old ? { ...item, price: old.price, change24h: old.change24h } : item;
+  });
+}
