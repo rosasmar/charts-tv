@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWhatsMovingPrompt, summarizeFromPrices } from "./whats-moving";
+import { buildWhatsMovingPrompt, liveOnly, summarizeFromPrices } from "./whats-moving";
 import type { WatchlistItem } from "./watchlist";
 
 const item = (symbol: string, change24h: number, price = 10): WatchlistItem => ({
@@ -50,5 +50,13 @@ describe("buildWhatsMovingPrompt", () => {
 
   it("says when there are no headlines", () => {
     expect(buildWhatsMovingPrompt([item("A", 1)], [])).toContain("(no headlines available)");
+  });
+});
+
+describe("liveOnly", () => {
+  it("drops symbols without a live quote, keeping order", () => {
+    const items = [item("SOL", 5.67), item("AMZN", -4.57), item("BTC", 1.2)];
+    expect(liveOnly(items, ["AMZN", "BTC"]).map((i) => i.symbol)).toEqual(["AMZN", "BTC"]);
+    expect(liveOnly(items, [])).toEqual([]);
   });
 });
