@@ -16,7 +16,7 @@ function moveTo(item: WatchlistItem, price: number): { price: number; change24h:
 }
 
 // The scripted moves for recording the demo, built around the live prices at
-// load: AMZN breaks the next $5 line above it (an "up" alert), then DOGE drops
+// load: AMZN crosses the next $5 line in the day's direction, then DOGE drops
 // through a line 3% below it (a "down" alert). They run through the real alert
 // engine, with the matching rules, so the banners are exactly what live data
 // would trigger.
@@ -24,11 +24,20 @@ export function buildDemoPlan(items: WatchlistItem[]): DemoPlan {
   const steps: DemoStep[] = [];
   const rules: AlertRule[] = [];
 
+  // AMZN moves with the day, so the banner matches the board: on a down day
+  // it drops through the next $5 line below (red), otherwise it breaks the
+  // next one above (green).
   const amzn = items.find((i) => i.symbol === "AMZN");
   if (amzn && amzn.price > 0) {
-    const level = Math.floor(amzn.price / 5) * 5 + 5;
-    steps.push({ atMs: 15_000, symbol: "AMZN", ...moveTo(amzn, round(level + 0.42, 2)) });
-    rules.push({ symbol: "AMZN", kind: "above", price: level });
+    if (amzn.change24h < 0) {
+      const level = Math.ceil(amzn.price / 5) * 5 - 5;
+      steps.push({ atMs: 15_000, symbol: "AMZN", ...moveTo(amzn, round(level - 0.42, 2)) });
+      rules.push({ symbol: "AMZN", kind: "below", price: level });
+    } else {
+      const level = Math.floor(amzn.price / 5) * 5 + 5;
+      steps.push({ atMs: 15_000, symbol: "AMZN", ...moveTo(amzn, round(level + 0.42, 2)) });
+      rules.push({ symbol: "AMZN", kind: "above", price: level });
+    }
   }
   const doge = items.find((i) => i.symbol === "DOGE");
   if (doge && doge.price > 0) {
