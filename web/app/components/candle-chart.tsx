@@ -21,7 +21,7 @@ const MONO_ADVANCE = 0.6;
 
 // A candlestick chart drawn as plain SVG: no chart library, nothing to load on
 // the TV, and every size in rem so it reads from across the room. The last
-// candle tracks the live price, marked with a dashed line and a price tag.
+// candle tracks the live price, marked with a price tag.
 export function CandleChart({
   symbol,
   candles,
@@ -193,16 +193,6 @@ function Plot({
         })}
       </g>
 
-      <line
-        x1={0}
-        x2={plotWidth}
-        y1={lastY}
-        y2={lastY}
-        stroke={lastUp ? "var(--up)" : "var(--down)"}
-        strokeWidth={1.5}
-        strokeDasharray={`${0.5 * rem} ${0.4 * rem}`}
-        opacity={0.8}
-      />
       <rect
         x={plotWidth + 0.5 * rem}
         y={lastY - 1 * rem}
