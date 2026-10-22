@@ -40,7 +40,7 @@ export function WhatsMovingPanel({ symbols }: { symbols: string[] | null }) {
   return (
     // One quiet line under the chart, set off by a hairline rather than a box,
     // so it reads as a caption and leaves the chart room to breathe.
-    <div className="mt-[0.75rem] flex min-w-0 items-baseline gap-[1.25rem] border-t border-panel-border pt-[1.25rem]">
+    <div className="mt-[0.75rem] flex min-w-0 items-baseline gap-[1.25rem] border-t border-panel-border pt-[2.25rem] -mb-[0.3rem]">
       <span className="shrink-0 text-[1.125rem] font-semibold uppercase tracking-[0.2em] text-muted">
         What&apos;s moving
       </span>
