@@ -241,3 +241,25 @@ These are the snags we hit while building ChartsTV with the Amazon Vega SDK, the
 - **Actual:** Untracked `.kiro/settings/` (CLI settings and a lock file) and `_bg/.kiro/settings/` appeared in the repo root.
 - **Workaround:** Added both to `.gitignore`.
 - **Suggestion:** Keep per-run settings outside the working tree, or add them to a repo-local ignore automatically.
+
+## Vega Virtual Device: recording the demo
+
+### 22. VVD clock falls hours behind after the Mac sleeps (High)
+- **Task:** Record the demo on the VVD the morning after a recording session.
+- **Steps:** Left the VVD running overnight while the Mac slept, relaunched the app, then compared `vega exec vda shell "date"` with the Mac's clock.
+- **Expected:** The VVD keeps the host's time, or resyncs when the host wakes.
+- **Actual:** The VVD was 10 hours behind (01:45 instead of 11:34 UTC), and on another day 3 hours behind. Our app's night mode, which follows the device clock, dimmed the screen in the middle of the day, and the on-screen clock showed the wrong time.
+- **Workaround:** `vega virtual-device stop` and then `start`, after which the clock matched the host.
+- **Suggestion:** Resync the VVD clock with the host on wake (or on `run-app`), or add `vega virtual-device sync-time`.
+
+### 23. VVD time zone is fixed to UTC and can't be changed (Medium)
+- **Task:** Run the VVD in a local time zone, to test time-of-day features (night dim, auto theme, clock) as a viewer would see them.
+- **Steps:**
+  - `timedatectl set-timezone America/Los_Angeles` fails with "System has not been booted with systemd as init system".
+  - Relinking `/etc/localtime` fails with "Read-only file system", as `app_user`.
+  - `timeservice` hung.
+  - `vega device --help` lists no time zone or locale option.
+- **Expected:** A supported way to set the VVD's time zone, as on a real Fire TV in Settings.
+- **Actual:** The VVD always runs in UTC, so every clock-driven feature is shifted by the developer's UTC offset. For us in Zurich, night mode started at midnight local time instead of 22:00.
+- **Workaround:** A URL flag in our app (`?dim=off`) and a separate recording build that forces the dim off.
+- **Suggestion:** Add `vega virtual-device start --timezone <tz>` or a settings command, and document that the VVD runs in UTC.
