@@ -15,6 +15,12 @@ const FLAT_PCT = 0.5;
 
 // The plain summary shown when Claude isn't available (no credentials, an
 // error, or a refusal). It only restates the numbers, so it can't be wrong.
+// The symbols whose price is a live quote, leaving out placeholders.
+export function liveOnly(items: WatchlistItem[], live: string[]): WatchlistItem[] {
+  const isLive = new Set(live);
+  return items.filter((item) => isLive.has(item.symbol));
+}
+
 export function summarizeFromPrices(items: WatchlistItem[]): WhatsMoving {
   const byMove = [...items].sort((a, b) => b.change24h - a.change24h);
   const top = byMove[0];

@@ -8,6 +8,7 @@ import { getMarketData } from "./market-data";
 import {
   WHATS_MOVING_SYSTEM_PROMPT,
   buildWhatsMovingPrompt,
+  liveOnly,
   summarizeFromPrices,
   type WhatsMoving,
 } from "./whats-moving";
@@ -34,10 +35,19 @@ const client = new AnthropicBedrockMantle({
 // falls back to the plain price summary so the panel never breaks.
 export async function getWhatsMoving(symbols: string[] | null = null): Promise<WhatsMoving> {
   "use cache";
-  cacheLife({ stale: 300, revalidate: 600, expire: 3_600 });
 
-  const { items } = await getMarketData(symbols);
-  const fallback = summarizeFromPrices(items);
+  // Only summarize real quotes: right after a deploy a provider can be rate
+  // limited, and its symbols then carry placeholder prices. Until every quote
+  // is live, keep the summary only briefly so it corrects itself within a
+  // minute. (expire stays at 10 minutes so the route remains prerendered.)
+  const { items, live } = await getMarketData(symbols);
+  const liveItems = liveOnly(items, live);
+  if (liveItems.length === items.length) {
+    cacheLife({ stale: 300, revalidate: 600, expire: 3_600 });
+  } else {
+    cacheLife({ stale: 30, revalidate: 30, expire: 600 });
+  }
+  const fallback = summarizeFromPrices(liveItems);
 
   try {
     const headlines = await getHeadlines();
@@ -45,7 +55,7 @@ export async function getWhatsMoving(symbols: string[] | null = null): Promise<W
       model: process.env.BEDROCK_MODEL ?? DEFAULT_MODEL,
       max_tokens: 4096,
       system: WHATS_MOVING_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildWhatsMovingPrompt(items, headlines) }],
+      messages: [{ role: "user", content: buildWhatsMovingPrompt(liveItems, headlines) }],
       output_config: { effort: "low", format: zodOutputFormat(SummarySchema) },
     });
 
