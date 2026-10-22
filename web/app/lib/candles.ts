@@ -122,8 +122,17 @@ export type CandleShape = {
   up: boolean;
 };
 
-// Lays candles out in a width×height box (y grows downward, like SVG), with a
-// little headroom so the highs and lows don't touch the edges. The box holds
+// The price range a chart shows: the candles' lows to highs plus a little
+// headroom, so the highs and lows don't touch the edges.
+export function priceRange(candles: Candle[]): { min: number; max: number } {
+  const lo = Math.min(...candles.map((c) => c.l));
+  const hi = Math.max(...candles.map((c) => c.h));
+  const pad = (hi - lo || hi * 0.01 || 1) * 0.08;
+  return { min: lo - pad, max: hi + pad };
+}
+
+// Lays candles out in a width×height box (y grows downward, like SVG) over
+// the priceRange of the candles. The box holds
 // at least `slots` candles, so a short series (the first minutes of a trading
 // day) keeps its usual candle width and fills in from the left.
 export function layoutCandles(
@@ -132,13 +141,7 @@ export function layoutCandles(
   height: number,
   slots = 0,
 ): { shapes: CandleShape[]; min: number; max: number; y: (price: number) => number } {
-  const lows = candles.map((c) => c.l);
-  const highs = candles.map((c) => c.h);
-  const lo = Math.min(...lows);
-  const hi = Math.max(...highs);
-  const pad = (hi - lo || hi * 0.01 || 1) * 0.08;
-  const min = lo - pad;
-  const max = hi + pad;
+  const { min, max } = priceRange(candles);
   const y = (price: number) => ((max - price) / (max - min)) * height;
   const slot = width / Math.max(candles.length, slots, 1);
   const bodyWidth = Math.max(slot * 0.62, 1);
