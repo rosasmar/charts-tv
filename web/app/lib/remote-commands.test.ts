@@ -352,6 +352,28 @@ describe("parseCommand – theme", () => {
     expect(parseCommand("alert me if bitcoin drops 5 percent")).toMatchObject({ type: "alert", symbol: "BTC" });
     expect(parseCommand("show solana")).toEqual({ type: "select", symbol: "SOL" });
   });
+
+  it("matcha mode / matcha theme → matcha", () => {
+    expect(parseCommand("matcha mode")).toEqual({ type: "theme", theme: "matcha" });
+    expect(parseCommand("Matcha theme please")).toEqual({ type: "theme", theme: "matcha" });
+    expect(parseCommand("switch to matcha mode")).toEqual({ type: "theme", theme: "matcha" });
+    expect(parseCommand("start matcha theme")).toEqual({ type: "theme", theme: "matcha" });
+  });
+
+  it("turning matcha off goes back to dark", () => {
+    expect(parseCommand("turn off matcha mode")).toEqual({ type: "theme", theme: "dark" });
+  });
+
+  it("matcha doesn't change the other phrasings", () => {
+    expect(parseCommand("matcha")).toBeNull();
+    expect(parseCommand("light mode")).toEqual({ type: "theme", theme: "light" });
+    expect(parseCommand("dark theme")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("auto mode")).toEqual({ type: "theme", theme: "auto" });
+    expect(parseCommand("neon lights")).toEqual({ type: "theme", theme: "neon" });
+    expect(parseCommand("turn off the neon lights")).toEqual({ type: "theme", theme: "dark" });
+    expect(parseCommand("pause")).toEqual({ type: "pause" });
+    expect(parseCommand("show amazon")).toEqual({ type: "select", symbol: "AMZN" });
+  });
 });
 
 // ---- background ---------------------------------------------------------------

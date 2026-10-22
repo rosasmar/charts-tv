@@ -69,6 +69,38 @@
   --panel-border: rgba(0, 0, 0, 0.12);
 }
 
+/* Matcha: a light green-tea theme. Warm cream cards on a pale sage page,
+   soft charcoal text, and the palette's sage green and dusty red deepened
+   enough to keep 4.5:1 on the cards. Instead of a glow, panels get a soft
+   offset "sketch" shadow (no blur, so it's cheap on TV GPUs). */
+:root[data-theme="matcha"] {
+  --background: #e0e5dc;
+  --foreground: #4a4a4a;
+  --muted: #636363;
+  --panel: #f7f5f2;
+  --panel-border: rgba(74, 74, 74, 0.14);
+  --up: #3f6b45;
+  --down: #9b4646;
+  --highlight: #4a4a4a;
+  --chart-grid: rgba(74, 74, 74, 0.12);
+  --price-tag-text: #ffffff;
+  --alert-info: #faf8f5;
+  --alert-info-glow: rgba(74, 74, 74, 0.3);
+  --alert-up: #e2ebdf;
+  --alert-down: #f4e4e2;
+  --qr-modules: #3a3a3a;
+  --qr-background: #e0e5dc;
+  --scrim: 224 229 220;
+  --panel-glow: 0.125rem 0.25rem 0 rgba(74, 74, 74, 0.08), 0.25rem 0.5rem 0 rgba(74, 74, 74, 0.04);
+  --badge-glow: 0.125rem 0.25rem 0 rgba(74, 74, 74, 0.1), 0.25rem 0.5rem 0 rgba(74, 74, 74, 0.05);
+}
+
+/* With a background photo: translucent cream panels, like the light theme. */
+:root[data-theme="matcha"][data-background] {
+  --panel: rgb(247 245 242 / calc(0.55 + 0.4 * var(--background-opacity, 0.35)));
+  --panel-border: rgba(74, 74, 74, 0.16);
+}
+
 /* Neon lights: a navy-to-purple gradient sky with soft pink and blue glows
    (neon-backdrop.tsx), violet-edged panels that let it show through, a
    magenta focus ring, and electric blue and hot pink for up and down, with a
