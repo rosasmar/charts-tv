@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { resolveSource } from "./market";
+import { mergeLive, resolveSource } from "./market";
 import type { MarketData } from "./market-data";
 import type { WatchlistItem } from "./watchlist";
 
@@ -9,8 +9,9 @@ import type { WatchlistItem } from "./watchlist";
 const POLL_MS = 60_000;
 
 // Starts from the prices rendered into the page, then keeps them fresh by
-// polling /api/market (or /api/market/custom for a picked list). A failed poll
-// keeps the last good prices on screen.
+// polling /api/market (or /api/market/custom for a picked list). A failed poll,
+// or a symbol that came back without a live quote, keeps the last good price
+// on screen.
 // With a picked list (`symbols`), the board switches to it at once, reusing
 // any prices it already has; the rest show a dash until the fetch, which
 // starts immediately, comes back.
@@ -30,7 +31,9 @@ export function useLiveMarket(
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: MarketData = await res.json();
-        if (!cancelled && data.items.length) setItems(data.items);
+        if (!cancelled && data.items.length) {
+          setItems((previous) => mergeLive(previous, data.items, data.live ?? []));
+        }
       } catch (error) {
         console.error(`[market] refresh failed: ${error}`);
       }

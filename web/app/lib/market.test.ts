@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  mergeLive,
   WATCHLIST_SOURCES,
   buildWatchlist,
   parseCoinGeckoPrices,
@@ -149,5 +150,20 @@ describe("pinFavorites", () => {
   it("leaves the list alone without favorites, and ignores unknown ones", () => {
     expect(pinFavorites(items, [])).toBe(items);
     expect(pinFavorites(items, ["NVDA"]).map((i) => i.symbol)).toEqual(items.map((i) => i.symbol));
+  });
+});
+
+describe("mergeLive", () => {
+  const item = (symbol: string, price: number, change24h = 0) => ({ symbol, name: symbol, price, change24h });
+
+  it("keeps the shown price for symbols without a live quote", () => {
+    const previous = [item("BTC", 81380, -2.1), item("AMZN", 250.38, -4.57)];
+    const next = [item("BTC", 108420.15, 2.38), item("AMZN", 250.5, -4.5)];
+    expect(mergeLive(previous, next, ["AMZN"])).toEqual([item("BTC", 81380, -2.1), item("AMZN", 250.5, -4.5)]);
+  });
+
+  it("takes the new value for a symbol it has never priced", () => {
+    expect(mergeLive([], [item("NVDA", 0)], [])).toEqual([item("NVDA", 0)]);
+    expect(mergeLive([item("NVDA", 0)], [item("NVDA", 180)], [])).toEqual([item("NVDA", 180)]);
   });
 });
