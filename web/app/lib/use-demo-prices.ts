@@ -50,6 +50,7 @@ export function buildDemoPlan(items: WatchlistItem[]): DemoPlan {
 
 // Returns `items` unchanged unless the page URL has ?demo=1, in which case the
 // scripted moves are applied on a timer and their alert rules are returned.
+// ?demoDelay=10 pushes every move 10 seconds later (for a longer intro).
 export function useDemoPrices(items: WatchlistItem[]): {
   items: WatchlistItem[];
   rules: AlertRule[];
@@ -59,11 +60,13 @@ export function useDemoPrices(items: WatchlistItem[]): {
   const firstItems = useRef(items);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("demo") !== "1") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") !== "1") return;
+    const delayMs = Math.max(0, Number(params.get("demoDelay")) || 0) * 1000;
     const plan = buildDemoPlan(firstItems.current);
     setRules(plan.rules);
     const timers = plan.steps.map((step) =>
-      setTimeout(() => setOverrides((o) => ({ ...o, [step.symbol]: step })), step.atMs),
+      setTimeout(() => setOverrides((o) => ({ ...o, [step.symbol]: step })), step.atMs + delayMs),
     );
     return () => timers.forEach(clearTimeout);
   }, []);
